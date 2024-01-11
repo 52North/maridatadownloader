@@ -14,7 +14,7 @@ Currently supported access services/APIs:
 ### Installation
 
 ```
-pip install git+https://github.com/52North/maridatadownloader.gi
+pip install git+https://github.com/52North/maridatadownloader.git
 ```
 
 ### Usage
