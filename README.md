@@ -14,7 +14,7 @@ Currently supported access services/APIs:
 ### Installation
 
 ```
-pip install git+https://github.com/52North/MariGeoRoute#subdirectory=data/maridatadownloader
+pip install git+https://github.com/52North/maridatadownloader.gi
 ```
 
 ### Usage
