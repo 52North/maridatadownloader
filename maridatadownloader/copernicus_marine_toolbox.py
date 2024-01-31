@@ -12,10 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class DownloaderCopernicusMarineToolboxapi(DownloaderBase):
+    """
     
-    def __init__(self, username=None, password=None, **kwargs):
-        super().__init__('cmtapi', username=username, password=password, **kwargs)
-        self.client = copernicusmarine.login(username=username, password=password)
+    
+    https://pypi.org/project/copernicusmarine/
+    """
+    
+    def __init__(self, cmems_username, cmems_password, **kwargs):
+        super().__init__('cmtapi', username=cmems_username, password=cmems_password,**kwargs)
+        self.client = copernicusmarine.login(username=cmems_username, password=cmems_password)
     
     def download(self, sel_dict=None, file_out=None, **kwargs):
         dataset = copernicusmarine.open_dataset(

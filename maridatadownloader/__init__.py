@@ -7,7 +7,7 @@ class DownloaderFactory:
         pass
 
     @classmethod
-    def get_downloader(cls, downloader_type, platform, username=None, password=None,**kwargs):
+    def get_downloader(cls, downloader_type, platform=None, username=None, password=None,**kwargs):
         if downloader_type.lower() == 'opendap':
             if platform.lower() == 'gfs':
                 return DownloaderOpendapGFS(username=username, password=password)
@@ -25,6 +25,6 @@ class DownloaderFactory:
             if platform.lower() == 'era5':
                 return DownloaderCdsapiERA5(uuid=username, api_key=password)
         elif downloader_type.lower() == 'cmtapi':
-            return DownloaderCopernicusMarineToolboxapi(username=username, password=password)
+            return DownloaderCopernicusMarineToolboxapi(cmems_username=username, cmems_password=password)
         else:
             raise ValueError(downloader_type)
