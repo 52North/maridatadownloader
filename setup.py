@@ -23,7 +23,7 @@ setup(
         'copernicusmarine==1.0.0',
         'pydap',
         'xarray',
-        'netCDF4>=1.5.8', #added >
+        'netCDF4>=1.5.8',
         'numpy',
         'pandas',
         'requests'
