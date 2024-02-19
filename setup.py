@@ -20,10 +20,10 @@ setup(
     description='Python package for downloading of weather data',
     install_requires=[
         'cdsapi',
-        'copernicusmarine==1.0.0',
+        'copernicusmarine',
         'pydap',
         'xarray',
-        'netCDF4>=1.5.8',
+        'netCDF4',
         'numpy',
         'pandas',
         'requests'

@@ -6,7 +6,8 @@ from maridatadownloader.base import DownloaderBase
 
 logger = logging.getLogger(__name__)
 
-class DownloaderCopernicusMarineToolboxapi(DownloaderBase):
+
+class DownloaderCopernicusMarineToolboxApi(DownloaderBase):
     """
     Downloader class for CMEMs data using the Copernicus Marine Toolbox api
     
@@ -34,10 +35,6 @@ class DownloaderCopernicusMarineToolboxapi(DownloaderBase):
          - https://help.marine.copernicus.eu/en/articles/8612591-switching-from-current-to-new-services
          
         """
-        
-        # Initialize dataset object 
-        dataset =  None 
-        
         try:
             dataset = copernicusmarine.open_dataset(
                 dataset_id =  sel_dict["dataset_id"],

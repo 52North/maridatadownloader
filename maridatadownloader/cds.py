@@ -10,7 +10,7 @@ from maridatadownloader.base import DownloaderBase
 logger = logging.getLogger(__name__)
 
 
-class DownloaderCdsapiERA5(DownloaderBase):
+class DownloaderCdsApiERA5(DownloaderBase):
     """
     ERA5 Reanalysis Downloader from cds copernicus based on xarray
 
