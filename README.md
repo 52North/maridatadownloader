@@ -104,8 +104,8 @@ You want to copy the dictionary within the request as your settings!
 ¹Registration needed  
 ²Check the CMEMS product catalog for additional products: https://data.marine.copernicus.eu/products  
 ³nrt = near real-time  
-⁴The download interface differs from the interface of the 'opendap' downloader type (ToDo: harmonize)
-⁵Deprecated (see https://marine.copernicus.eu/news/introducing-new-copernicus-marine-data-store)
+⁴The download interface differs from the interface of the 'opendap' downloader type (ToDo: harmonize)  
+⁵Deprecated (see https://marine.copernicus.eu/news/introducing-new-copernicus-marine-data-store)  
 
 Dataset references:
 - [1] https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_WAV_001_027/description
