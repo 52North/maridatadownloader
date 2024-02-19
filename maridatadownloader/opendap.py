@@ -15,10 +15,6 @@ from maridatadownloader.utils import get_start_and_end_time, make_timezone_aware
 logger = logging.getLogger(__name__)
 
 
-# Currently only OPeNDAP is supported, however, the considered data providers CMEMS and GFS (NCEI) offer further
-# data access mechanisms like FTP, WCS (Web Coverage Service) or NCSS (NetCDF Subset Service).
-
-
 class DownloaderOpendap(DownloaderBase):
     """
     OPeNDAP downloader class based on xarray

@@ -27,7 +27,7 @@ class DownloaderFactory:
                 return DownloaderCdsApiERA5(uuid=username, api_key=password)
         elif downloader_type.lower() == 'cmtapi':
             if platform.lower() == 'cmems':
-                return DownloaderCopernicusMarineToolboxApi(cmems_username=username, cmems_password=password)
+                return DownloaderCopernicusMarineToolboxApi(username=username, password=password, **kwargs)
             else:
                 raise ValueError(platform)
         else:
