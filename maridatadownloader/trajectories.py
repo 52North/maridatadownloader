@@ -5,6 +5,7 @@ import pandas as pd
 import xarray
 
 from maridatadownloader import DownloaderFactory
+import maridatadownloader.copernicus_marine_toolbox
 
 
 def enrich_trajectory_with_env_data(csv_file, username, password, method_interp='nearest', method_extrap='linear',
@@ -258,3 +259,46 @@ def read_hf_data_positions(csv_file):
     df_positions['time'] = df_positions['time'].map(lambda item: datetime.strptime(item, '%Y-%m-%dT%H:%M:%S.%f'))
     df_positions.drop(columns=['N', 'E'], inplace=True)
     return df_positions
+
+
+def create_cmems_column(df_ship, dataset_cmems_VHM0, date):
+    """
+    
+    """
+    
+    # create new df with obtained cmems values based on ship coords 
+    df_new = pd.DataFrame(dataset_cmems_VHM0.sel(latitude=df_ship['latitude'].tolist(), longitude=df_ship['longitude'].tolist(), time=date, method='nearest').VHM0.values.diagonal(), columns = ['CMEMs_wave_height'])
+    
+    # concatenate original df_ship positions with new df of cmems info
+    df_enriched = pd.concat([df_ship, df_new], axis=1)
+    
+    return df_enriched
+    
+    
+    
+def enrich_trajectory_with_wave_data_igor(csv_file, username, password, parameters=None,
+                                     method_interp='nearest', method_extrap='linear'):
+    """
+    :return: pandas.Dataframe
+    """
+    if parameters is None:
+        parameters = ['VHM0', 'VMDR', 'VTPK']
+
+
+    ################ Changed 
+    df_positions = pd.read_csv(csv_file)
+    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+    df_positions['time'] = pd.to_datetime(df_positions['time'])
+    ###############
+    
+    sel_dict = get_trajectory_dict(df_positions)
+
+    wave_trajectory = get_cmems_trajectory('cmems_mod_glo_wav_anfc_0.083deg_PT3H-i', 'nrt',
+                                           username, password, parameters, sel_dict,
+                                           method_interp=method_interp, method_extrap=method_extrap)
+
+    df_wave = wave_trajectory.to_dataframe()
+    # path, ext = os.path.splitext(csv_file)
+    # csv_file_out = path + '_cmems_wave' + ext
+    # df_wave.to_csv(csv_file_out)
+    return df_wave
