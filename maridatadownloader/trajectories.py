@@ -302,3 +302,111 @@ def enrich_trajectory_with_wave_data_igor(csv_file, username, password, paramete
     # csv_file_out = path + '_cmems_wave' + ext
     # df_wave.to_csv(csv_file_out)
     return df_wave
+
+
+def enrich_trajectory_with_weather_data_igor(csv_file, parameters=None, height_above_ground=10, method_interp='nearest'):
+    """
+    :return: pandas.Dataframe
+    """
+    if parameters is None:
+        parameters = ["Temperature_surface", "Pressure_reduced_to_MSL_msl", "Wind_speed_gust_surface",
+                      "u-component_of_wind_height_above_ground", "v-component_of_wind_height_above_ground"]
+
+    ################ Changed 
+    df_positions = pd.read_csv(csv_file)
+    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+    df_positions['time'] = pd.to_datetime(df_positions['time'])
+    ###############
+    
+    sel_dict = get_trajectory_dict(df_positions)
+
+    sel_dict['time1'] = sel_dict['time']
+    if height_above_ground:
+        sel_dict['height_above_ground'] = height_above_ground
+        sel_dict['height_above_ground2'] = height_above_ground
+
+    gfs = DownloaderFactory.get_downloader('opendap', 'gfs')
+    weather_trajectory = gfs.download(parameters=parameters, sel_dict=sel_dict, interpolate=True,
+                                      method=method_interp)
+    df_weather = weather_trajectory.to_dataframe()
+    return df_weather
+
+
+def enrich_trajectory_with_physics_data_igor(csv_file, username, password, parameters=None,
+                                        method_interp='nearest', method_extrap='linear'):
+    """
+    :return: pandas.Dataframe
+    """
+    if parameters is None:
+        parameters = ['thetao', 'so', 'zos']
+
+    ################ Changed 
+    df_positions = pd.read_csv(csv_file)
+    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+    df_positions['time'] = pd.to_datetime(df_positions['time'])
+    ###############
+    
+    sel_dict = get_trajectory_dict(df_positions)
+
+    physics_trajectory = get_cmems_trajectory('cmems_mod_glo_phy_anfc_0.083deg_PT1H-m', 'nrt',
+                                              username, password, parameters, sel_dict,
+                                              method_interp=method_interp, method_extrap=method_extrap)
+
+    df_physics = physics_trajectory.to_dataframe()
+    return df_physics
+
+
+def enrich_trajectory_with_physics_data_igor(csv_file, username, password, parameters=None,
+                                        method_interp='nearest', method_extrap='linear'):
+    """
+    :return: pandas.Dataframe
+    """
+    if parameters is None:
+        parameters = ['thetao', 'so', 'zos']
+
+    ################ Changed 
+    df_positions = pd.read_csv(csv_file)
+    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+    df_positions['time'] = pd.to_datetime(df_positions['time'])
+    ###############
+    
+    sel_dict = get_trajectory_dict(df_positions)
+
+    physics_trajectory = get_cmems_trajectory('cmems_mod_glo_phy_anfc_0.083deg_PT1H-m', 'nrt',
+                                              username, password, parameters, sel_dict,
+                                              method_interp=method_interp, method_extrap=method_extrap)
+
+    df_physics = physics_trajectory.to_dataframe()
+    return df_physics
+
+
+def enrich_trajectory_with_bathymetric_data(csv_file, method_interp='nearest', method_extrap='linear', spatial_buffer=1):
+    """
+    :return: pandas.Dataframe
+    """
+    ################ Changed 
+    df_positions = pd.read_csv(csv_file)
+    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+    df_positions['time'] = pd.to_datetime(df_positions['time'])
+    ###############
+    
+    sel_dict = get_trajectory_dict(df_positions)
+
+
+    data_url = "https://www.ngdc.noaa.gov/thredds/dodsC/global/ETOPO2022/30s/30s_geoid_netcdf/ETOPO_2022_v1_30s_N90W180_geoid.nc"
+    bathymetric_data = xarray.open_dataset(data_url)
+    
+    
+    # filter specific values based on interest lat / lon
+    lon_min = min(sel_dict['longitude'])
+    lon_max = max(sel_dict['longitude'])
+    lat_min = min(sel_dict['latitude'])
+    lat_max = max(sel_dict['latitude'])
+    
+    depth_trajectory = bathymetric_data.sel(lat=slice(lat_min - spatial_buffer, lat_max + spatial_buffer),
+                            lon=slice(lon_min - spatial_buffer, lon_max + spatial_buffer))
+
+    depth_trajectory = depth_trajectory.interp(method=method_interp)
+
+    df_depth = depth_trajectory.to_dataframe()
+    return df_depth
