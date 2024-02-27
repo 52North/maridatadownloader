@@ -113,3 +113,9 @@ Dataset references:
 - [3] https://thredds.ucar.edu/thredds/catalog/grib/NCEP/GFS/Global_0p25deg/catalog.html
 - [4] https://www.ncei.noaa.gov/products/etopo-global-relief-model
 - [5] https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels
+
+### Funding
+
+| Project/Logo | Description |
+| :-------------: | :------------- |
+| [<img alt="MariData" align="middle" width="267" height="50" src="https://52north.org/delivery/MariData/img/maridata_logo.png"/>](https://www.maridata.org/) | MariGeoRoute is funded by the German Federal Ministry of Economic Affairs and Energy (BMWi)[<img alt="BMWi" align="middle" width="144" height="72" src="https://52north.org/delivery/MariData/img/bmwi_logo_en.png" style="float:right"/>](https://www.bmvi.de/) |
