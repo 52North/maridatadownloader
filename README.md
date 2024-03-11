@@ -89,6 +89,20 @@ and select the parameters, time and extent you like to use and click on `show AP
 <br>
 You want to copy the dictionary within the request as your settings!
 
+#### Chunking
+
+Downloader types based on xarray can use chunking via dask. The desired chunk sizes are stored as an object attribute of the downloader.
+They can be provided to the `DownloaderFactory.get_downloader` method and are internally passed to the `xarray.open_dataset` method.
+
+```python
+chunks = {'latitude': 100, 'longitude': 100}
+gfs = DownloaderFactory.get_downloader('opendap', 'gfs', chunks=chunks)
+```
+
+Further reading:
+ - https://docs.xarray.dev/en/stable/user-guide/dask.html
+ - https://examples.dask.org/xarray.html
+
 ### Available datasets/downloader
 
 | Platform/Provider | Downloader type  | Type of data         | Product                                  | Product type | References |

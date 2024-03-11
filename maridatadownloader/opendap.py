@@ -37,6 +37,10 @@ class DownloaderOpendap(DownloaderBase):
         self.platform = platform
         self.dataset = None
         self.filename_or_obj = self.get_filename_or_obj(**kwargs)
+        if 'chunks' in kwargs:
+            self.chunks = kwargs['chunks']
+        else:
+            self.chunks = None
         self.open_dataset()
 
     def check_connection(self):
@@ -100,9 +104,9 @@ class DownloaderOpendap(DownloaderBase):
 
     def open_dataset(self):
         if type(self.filename_or_obj) == list:
-            self.dataset = xarray.open_mfdataset(self.filename_or_obj, decode_coords="all")
+            self.dataset = xarray.open_mfdataset(self.filename_or_obj, decode_coords="all", chunks=self.chunks)
         else:
-            self.dataset = xarray.open_dataset(self.filename_or_obj, decode_coords="all")
+            self.dataset = xarray.open_dataset(self.filename_or_obj, decode_coords="all", chunks=self.chunks)
             # ToDO: use cache=False here or in preprocessing?
             # self.dataset = xarray.open_dataset(self.filename_or_obj, cache=False)
 
@@ -256,7 +260,7 @@ class DownloaderOpendapGFS(DownloaderOpendap):
         self.urls = self._get_urls_time_window(time_start, time_end)
         datasets = []
         for url in self.urls:
-            dataset_temp = xarray.open_dataset(url)
+            dataset_temp = xarray.open_dataset(url, chunks=self.chunks)
             dataset_temp = self.preprocessing(dataset_temp, parameters)
             dataset_temp = self.postprocessing(dataset_temp)
             # Is there a significant speed-up if we apply additional subsetting already here?
