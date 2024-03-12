@@ -10,7 +10,7 @@ from pydap.cas.get_cookies import setup_session
 from xarray.backends import NetCDF4DataStore
 
 from maridatadownloader.base import DownloaderBase
-from maridatadownloader.utils import get_start_and_end_time, make_timezone_aware
+from maridatadownloader.utils import get_sel_dict_orthogonal, get_start_and_end_time, make_timezone_aware
 
 logger = logging.getLogger(__name__)
 
@@ -102,13 +102,15 @@ class DownloaderOpendap(DownloaderBase):
         """
         raise NotImplementedError("._get_filename_or_obj() must be overridden.")
 
-    def open_dataset(self):
-        if type(self.filename_or_obj) == list:
-            self.dataset = xarray.open_mfdataset(self.filename_or_obj, decode_coords="all", chunks=self.chunks)
+    def open_dataset(self, filename_or_obj=None):
+        if filename_or_obj is None:
+            filename_or_obj = self.filename_or_obj
+        if type(filename_or_obj) == list:
+            self.dataset = xarray.open_mfdataset(filename_or_obj, decode_coords="all", chunks=self.chunks)
         else:
-            self.dataset = xarray.open_dataset(self.filename_or_obj, decode_coords="all", chunks=self.chunks)
+            self.dataset = xarray.open_dataset(filename_or_obj, decode_coords="all", chunks=self.chunks)
             # ToDO: use cache=False here or in preprocessing?
-            # self.dataset = xarray.open_dataset(self.filename_or_obj, cache=False)
+            # self.dataset = xarray.open_dataset(filename_or_obj, cache=False)
 
     def postprocessing(self, dataset):
         """Apply operations on the xarray.Dataset after download, e.g. rename variables"""
@@ -256,20 +258,20 @@ class DownloaderOpendapGFS(DownloaderOpendap):
 
     def _download_archived_data(self, time_start, time_end, parameters=None, sel_dict={}, file_out=None,
                                 interpolate=False, **kwargs):
+        # Check if vectorized indexing should be applied. If yes, create a sel_dict for orthogonal indexing first
+        sel_dict_orthogonal = get_sel_dict_orthogonal(sel_dict)
         # Merge datasets from different urls
         self.urls = self._get_urls_time_window(time_start, time_end)
         datasets = []
         for url in self.urls:
-            dataset_temp = xarray.open_dataset(url, chunks=self.chunks)
-            dataset_temp = self.preprocessing(dataset_temp, parameters)
-            dataset_temp = self.postprocessing(dataset_temp)
-            # Is there a significant speed-up if we apply additional subsetting already here?
-            # dataset_temp = self.postprocessing(dataset_temp).isel(height_above_ground=0)
+            self.open_dataset(url)
+            dataset_temp = super().download(parameters=parameters, sel_dict=sel_dict_orthogonal, file_out=None,
+                                            interpolate=False)
             datasets.append(dataset_temp)
         dataset = xarray.concat(datasets, dim="time")
 
         # Because of possible coordinate renaming in self.postprocessing, we need to make sure that the original
-        # indexers are considered in the subsequent subsetting process
+        # indexers are considered in the subsequent sub-setting process
         if 'time1' in sel_dict and 'time' not in sel_dict:
             sel_dict['time'] = sel_dict['time1']
         if 'time2' in sel_dict and 'time' not in sel_dict:
@@ -290,6 +292,9 @@ class DownloaderOpendapGFS(DownloaderOpendap):
         if file_out:
             logger.info(f"Save dataset to '{file_out}'")
             dataset_sub.to_netcdf(file_out)
+
+        # Reset to default forecast dataset so subsequent calls work as expected
+        self.set_filename_or_obj()
 
         return dataset_sub
 
@@ -321,6 +326,11 @@ class DownloaderOpendapGFS(DownloaderOpendap):
         return url
 
     def _get_urls_time_window(self, time_start, time_end):
+        """
+        Return a list of urls for the specified time interval. If time_start and time_end coincide exactly with the
+        forecast times of GFS, they will be used as interval bounds. If time_start or time_end do not coincide with
+        forecast times, the url for the next smallest/largest forecast time is also included in the interval.
+        """
         l = [element for element in self.forecast_times if element <= time_start.time()]
         if l:
             closest_smaller_gfs_datetime = datetime.combine(time_start.date(), max(l), tzinfo=timezone.utc)

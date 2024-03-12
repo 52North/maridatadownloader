@@ -60,7 +60,8 @@ Conventions
 
 The sub-setting logic is implemented using xarray. Depending on the arguments provided to the `download`-method a different xarray method is used (`sel`, `isel` or `interp`). Note also that `kwargs` are passed on to the corresponding xarray method. For a detailed documentation of sub-setting with xarray check the dedicated section on their website: https://docs.xarray.dev/en/latest/user-guide/indexing.html.
 
-Sub-setting along a trajectory is possible by defining a common dimension (here: 'trajectory') for the sub-setting coordinates:
+Note that it is also possible to apply vectorized indexing (in contrast to the common orthogonal indexing).  
+E.g. sub-setting along a trajectory is possible by defining a common dimension (here: 'trajectory') for the sub-setting coordinates:
 
 ```python
 from datetime import datetime
@@ -84,10 +85,14 @@ sel_dict = {
     'latitude': lats_xr
 }
 ```
-To get the settings for the ERA5 CDSapi go to [their website](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form) 
-and select the parameters, time and extent you like to use and click on `show API request` at the bottom of the page.
-<br>
-You want to copy the dictionary within the request as your settings!
+
+Further reading:
+ - https://docs.xarray.dev/en/stable/user-guide/indexing.html#vectorized-indexing
+ - https://docs.xarray.dev/en/stable/user-guide/interpolation.html#advanced-interpolation
+
+**Important note on the 'cdsapi' downloader**:  
+The downloader method is not yet harmonized with the other downloaders, so the API has to be used differently. To get the settings for the ERA5 CDS API go to [their website](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form) 
+and select the parameters, time and extent you like to use and click on `show API request` at the bottom of the page. Then you can copy the dictionary within the request and use it as your `settings` function parameter.
 
 #### Chunking
 
