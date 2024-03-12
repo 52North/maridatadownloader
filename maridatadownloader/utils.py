@@ -32,45 +32,45 @@ def get_start_and_end_time(time_):
     :returns: 2-tuple of datetime.datetime objects
     """
     # Note: xarray doesn't support tuples as indexer
-    if type(time_) == str:
+    if isinstance(time_, str):
         time_start = time_end = parse_datetime(time_)
-    elif type(time_) == datetime:
+    elif isinstance(time_, datetime):
         time_start = time_end = time_
-    elif type(time_) == slice:
+    elif isinstance(time_, slice):
         time_start = time_.start
         time_end = time_.stop
-        if type(time_start) == str:
+        if isinstance(time_start, str):
             time_start = parse_datetime(time_start)
-        if type(time_end) == str:
+        if isinstance(time_end, str):
             time_end = parse_datetime(time_end)
-    elif type(time_) == list or type(time_) == ndarray:
+    elif isinstance(time_, list) or isinstance(time_, ndarray):
         time_start = min(time_)
         time_end = max(time_)
-        if type(time_start) == str:
+        if isinstance(time_start, str):
             time_start = parse_datetime(time_start)
-        if type(time_end) == str:
+        if isinstance(time_end, str):
             time_end = parse_datetime(time_end)
-    elif type(time_) == xarray.DataArray:
+    elif isinstance(time_, xarray.DataArray):
         # Notes:
         # - if datetime objects are timezone aware xarray.DataArray will parse them into pandas.Timestamp objects
         # - if datetime objects are not timezone aware xarray.DataArray will parse them into numpy.datetime64 objects
         time_start = min(time_).values
         time_end = max(time_).values
-        if type(time_start) == ndarray:
+        if isinstance(time_start, ndarray):
             time_start = time_start.item()
-            if type(time_start) == Timestamp:
+            if isinstance(time_start, Timestamp):
                 time_start = time_start.to_pydatetime()
-            elif type(time_start) == str:
+            elif isinstance(time_start, str):
                 time_start = parse_datetime(time_start)
-        elif type(time_start) == datetime64:
+        elif isinstance(time_start, datetime64):
             time_start = convert_datetime(time_start)
-        if type(time_end) == ndarray:
+        if isinstance(time_end, ndarray):
             time_end = time_end.item()
-            if type(time_end) == Timestamp:
+            if isinstance(time_end, Timestamp):
                 time_end = time_end.to_pydatetime()
-            elif type(time_end) == str:
+            elif isinstance(time_end, str):
                 time_end = parse_datetime(time_end)
-        elif type(time_end) == datetime64:
+        elif isinstance(time_end, datetime64):
             time_end = convert_datetime(time_end)
     else:
         raise ValueError(f"Unsupported indexer type '{type(time_)}'")
