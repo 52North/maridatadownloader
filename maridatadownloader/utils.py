@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 
 import xarray
 from numpy import datetime64, ndarray
@@ -26,51 +27,86 @@ def convert_datetime(dt64):
         return None
 
 
+def get_sel_dict_orthogonal(sel_dict, buffer_space=1.0, buffer_hours=3):
+    """
+    :param sel_dict:
+    :param buffer_space: numerical in degrees
+    :param buffer_hours: numerical in hours
+    :return: sel_dict for orthogonal indexing including a spatial and temporal buffer
+    """
+    sel_dict_orthogonal = deepcopy(sel_dict)
+    if 'longitude' in sel_dict_orthogonal and isinstance(sel_dict_orthogonal['longitude'], xarray.DataArray):
+        lon_min = min(sel_dict_orthogonal['longitude']).values.item() - buffer_space
+        lon_max = max(sel_dict_orthogonal['longitude']).values.item() + buffer_space
+        sel_dict_orthogonal['longitude'] = slice(lon_min, lon_max)
+    if 'latitude' in sel_dict_orthogonal and isinstance(sel_dict_orthogonal['latitude'], xarray.DataArray):
+        lat_min = min(sel_dict_orthogonal['latitude']).values.item() - buffer_space
+        lat_max = max(sel_dict_orthogonal['latitude']).values.item() + buffer_space
+        sel_dict_orthogonal['latitude'] = slice(lat_min, lat_max)
+    # Make datetime objects timezone-unaware because the xarray.Dataset.sel method otherwise throws an error
+    if 'time' in sel_dict_orthogonal and isinstance(sel_dict_orthogonal['time'], xarray.DataArray):
+        time_start, time_end = get_start_and_end_time(sel_dict_orthogonal['time'])
+        time_start = (time_start - timedelta(hours=buffer_hours)).replace(tzinfo=None)
+        time_end = (time_end + timedelta(hours=buffer_hours)).replace(tzinfo=None)
+        sel_dict_orthogonal['time'] = slice(time_start, time_end)
+    if 'time1' in sel_dict_orthogonal and isinstance(sel_dict_orthogonal['time1'], xarray.DataArray):
+        time_start, time_end = get_start_and_end_time(sel_dict_orthogonal['time1'])
+        time_start = (time_start - timedelta(hours=buffer_hours)).replace(tzinfo=None)
+        time_end = (time_end + timedelta(hours=buffer_hours)).replace(tzinfo=None)
+        sel_dict_orthogonal['time1'] = slice(time_start, time_end)
+    if 'time2' in sel_dict_orthogonal and isinstance(sel_dict_orthogonal['time2'], xarray.DataArray):
+        time_start, time_end = get_start_and_end_time(sel_dict_orthogonal['time2'])
+        time_start = (time_start - timedelta(hours=buffer_hours)).replace(tzinfo=None)
+        time_end = (time_end + timedelta(hours=buffer_hours)).replace(tzinfo=None)
+        sel_dict_orthogonal['time2'] = slice(time_start, time_end)
+    return sel_dict_orthogonal
+
+
 def get_start_and_end_time(time_):
     """Extract start and end time from
 
     :returns: 2-tuple of datetime.datetime objects
     """
     # Note: xarray doesn't support tuples as indexer
-    if type(time_) == str:
+    if isinstance(time_, str):
         time_start = time_end = parse_datetime(time_)
-    elif type(time_) == datetime:
+    elif isinstance(time_, datetime):
         time_start = time_end = time_
-    elif type(time_) == slice:
+    elif isinstance(time_, slice):
         time_start = time_.start
         time_end = time_.stop
-        if type(time_start) == str:
+        if isinstance(time_start, str):
             time_start = parse_datetime(time_start)
-        if type(time_end) == str:
+        if isinstance(time_end, str):
             time_end = parse_datetime(time_end)
-    elif type(time_) == list or type(time_) == ndarray:
+    elif isinstance(time_, list) or isinstance(time_, ndarray):
         time_start = min(time_)
         time_end = max(time_)
-        if type(time_start) == str:
+        if isinstance(time_start, str):
             time_start = parse_datetime(time_start)
-        if type(time_end) == str:
+        if isinstance(time_end, str):
             time_end = parse_datetime(time_end)
-    elif type(time_) == xarray.DataArray:
+    elif isinstance(time_, xarray.DataArray):
         # Notes:
         # - if datetime objects are timezone aware xarray.DataArray will parse them into pandas.Timestamp objects
         # - if datetime objects are not timezone aware xarray.DataArray will parse them into numpy.datetime64 objects
         time_start = min(time_).values
         time_end = max(time_).values
-        if type(time_start) == ndarray:
+        if isinstance(time_start, ndarray):
             time_start = time_start.item()
-            if type(time_start) == Timestamp:
+            if isinstance(time_start, Timestamp):
                 time_start = time_start.to_pydatetime()
-            elif type(time_start) == str:
+            elif isinstance(time_start, str):
                 time_start = parse_datetime(time_start)
-        elif type(time_start) == datetime64:
+        elif isinstance(time_start, datetime64):
             time_start = convert_datetime(time_start)
-        if type(time_end) == ndarray:
+        if isinstance(time_end, ndarray):
             time_end = time_end.item()
-            if type(time_end) == Timestamp:
+            if isinstance(time_end, Timestamp):
                 time_end = time_end.to_pydatetime()
-            elif type(time_end) == str:
+            elif isinstance(time_end, str):
                 time_end = parse_datetime(time_end)
-        elif type(time_end) == datetime64:
+        elif isinstance(time_end, datetime64):
             time_end = convert_datetime(time_end)
     else:
         raise ValueError(f"Unsupported indexer type '{type(time_)}'")

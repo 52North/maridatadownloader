@@ -252,12 +252,16 @@ def read_hf_data_positions(csv_file):
     :param csv_file:
     :return: pandas.Dataframe
     """
-    df_positions = pd.read_csv(csv_file, names=['time', 'latitude', 'N', 'longitude', 'E'], sep='\||,', dtype=str,
-                               engine='python')
+    df_positions = pd.read_csv(csv_file, names=['time', 'latitude', 'direction_y', 'longitude', 'direction_x'],
+                               sep='\||,', dtype=str, engine='python')
     df_positions['latitude'] = df_positions['latitude'].map(lambda item: int(item[:2]) + float(item[2:]) / 60)
     df_positions['longitude'] = df_positions['longitude'].map(lambda item: int(item[:3]) + float(item[3:]) / 60)
     df_positions['time'] = df_positions['time'].map(lambda item: datetime.strptime(item, '%Y-%m-%dT%H:%M:%S.%f'))
-    df_positions.drop(columns=['N', 'E'], inplace=True)
+    is_west = df_positions['direction_x'] == 'W'
+    df_positions.loc[is_west, 'longitude'] = df_positions['longitude'][is_west] * -1
+    is_south = df_positions['direction_y'] == 'S'
+    df_positions.loc[is_south, 'latitude'] = df_positions['latitude'][is_south] * -1
+    df_positions.drop(columns=['direction_y', 'direction_x'], inplace=True)
     return df_positions
 
 
