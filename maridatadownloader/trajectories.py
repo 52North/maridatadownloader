@@ -333,7 +333,36 @@ def enrich_trajectory_with_weather_data_igor(csv_file, parameters=None, height_a
     weather_trajectory = gfs.download(parameters=parameters, sel_dict=sel_dict, interpolate=True,
                                       method=method_interp)
     df_weather = weather_trajectory.to_dataframe()
-    return df_weather
+    
+    
+    # df_weather returns: index(trajectory), u-component_of_wind_height_above_ground, v-component_of_wind_height_above_ground, time, longitude, latitude, height_above_ground
+    ##### TO DO: post processing function
+    
+    # If both components are present on the dataframe generated as output in df_weather
+    if 'u-component_of_wind_height_above_ground' and 'v-component_of_wind_height_above_ground' in df_weather.columns:
+        
+        # Calculate wind speed from u and v components and convert it from m/s to knots (*1.94384)
+        df_weather['tws_gfs_kts'] = np.sqrt(df_weather['u-component_of_wind_height_above_ground'] + df_weather['v-component_of_wind_height_above_ground'])*1.94384
+    
+        # Calculate wind direction from u and v components math (wind direction)
+        df_weather['twd_gfs_T'] = (270 - 
+                                   np.degrees(
+                                       np.arctan2(df_weather['v-component_of_wind_height_above_ground'], df_weather['u-component_of_wind_height_above_ground']))) % 360
+        
+
+        # Select only intserest columns and convert to float64 type (needed for rounding values)
+        df_weather = df_weather[['tws_gfs_kts', 'twd_gfs_T']].astype(np.float64)
+        
+        # Round speed 
+        df_weather['tws_gfs_kts'] = np.round(df_weather['tws_gfs_kts'], 2)
+        
+        # Round angle 
+        df_weather['twd_gfs_T'] = np.round(df_weather['twd_gfs_T'], 2)
+         
+        # Concatenate input dataframe (ship data) with enriched data
+        df_result = pd.concat([df_positions, df_weather], axis=1)
+
+    return df_result
 
 
 def enrich_trajectory_with_physics_data_igor(csv_file, username, password, parameters=None,
