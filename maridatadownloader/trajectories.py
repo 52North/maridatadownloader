@@ -245,7 +245,32 @@ def has_nan(dataarray_or_dataset):
             return True
         else:
             return False
+        
 
+def read_bto_extracted_data_positions(file):
+    """   
+    Read data extracted from Bluetracker API format
+    
+    :param file: pandas.Dataframe or csv file
+    :return: pandas.Dataframe
+    """
+    
+    try:
+        if file.lower().endswith('.csv'):
+            df_position = pd.read_csv(file)
+            df_position.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+            df_position['time'] = pd.to_datetime(df_position['time'])
+        elif isinstance(file, pd.DataFrame):
+            df_position = file
+            df_position.rename(columns={'timestampUtc' : 'time'}, inplace=True)
+            df_position['time'] = pd.to_datetime(df_position['time'])
+        else:
+            raise ValueError('Invalid file format')
+        return df_position
+    except Exception as e:
+        print('Error:', e)
+        return None
+    
 
 def read_hf_data_positions(csv_file):
     """
@@ -278,9 +303,8 @@ def create_cmems_column(df_ship, dataset_cmems_VHM0, date):
     
     return df_enriched
     
-    
-    
-def enrich_trajectory_with_wave_data_igor(csv_file, username, password, parameters=None,
+
+def enrich_trajectory_with_wave_data_igor(file, output_file, username, password, parameters=None,
                                      method_interp='nearest', method_extrap='linear'):
     """
     :return: pandas.Dataframe
@@ -288,13 +312,7 @@ def enrich_trajectory_with_wave_data_igor(csv_file, username, password, paramete
     if parameters is None:
         parameters = ['VHM0', 'VMDR', 'VTPK']
 
-
-    ################ Changed 
-    df_positions = pd.read_csv(csv_file)
-    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
-    df_positions['time'] = pd.to_datetime(df_positions['time'])
-    ###############
-    
+    df_positions = read_bto_extracted_data_positions(file)
     sel_dict = get_trajectory_dict(df_positions)
 
     wave_trajectory = get_cmems_trajectory('cmems_mod_glo_wav_anfc_0.083deg_PT3H-i', 'nrt',
@@ -304,24 +322,19 @@ def enrich_trajectory_with_wave_data_igor(csv_file, username, password, paramete
     df_wave = wave_trajectory.to_dataframe()
     # path, ext = os.path.splitext(csv_file)
     # csv_file_out = path + '_cmems_wave' + ext
-    # df_wave.to_csv(csv_file_out)
+    df_wave.to_csv(output_file)
+    
     return df_wave
 
-
-def enrich_trajectory_with_weather_data_igor(csv_file, parameters=None, height_above_ground=10, method_interp='nearest'):
+def enrich_trajectory_with_weather_data_igor(file, output_file, parameters=None, height_above_ground=10, method_interp='nearest'):
     """
     :return: pandas.Dataframe
     """
     if parameters is None:
         parameters = ["Temperature_surface", "Pressure_reduced_to_MSL_msl", "Wind_speed_gust_surface",
                       "u-component_of_wind_height_above_ground", "v-component_of_wind_height_above_ground"]
-
-    ################ Changed 
-    df_positions = pd.read_csv(csv_file)
-    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
-    df_positions['time'] = pd.to_datetime(df_positions['time'])
-    ###############
-    
+        
+    df_positions = read_bto_extracted_data_positions(file)
     sel_dict = get_trajectory_dict(df_positions)
 
     sel_dict['time1'] = sel_dict['time']
@@ -334,38 +347,31 @@ def enrich_trajectory_with_weather_data_igor(csv_file, parameters=None, height_a
                                       method=method_interp)
     df_weather = weather_trajectory.to_dataframe()
     
+    df_weather.to_csv(output_file)
+    return df_weather
+
+
+def enrich_trajectory_with_currents_data_igor(file, output_file, username, password, parameters=None,
+                                         method_interp='nearest', method_extrap='linear'):
+    """
+    :return: pandas.Dataframe
+    """
+    if parameters is None:
+        parameters = ['utotal', 'vtotal']
+
+    df_positions = read_bto_extracted_data_positions(file)
+    sel_dict = get_trajectory_dict(df_positions)
     
-    # df_weather returns: index(trajectory), u-component_of_wind_height_above_ground, v-component_of_wind_height_above_ground, time, longitude, latitude, height_above_ground
-    ##### TO DO: post processing function
+    currents_trajectory = get_cmems_trajectory('cmems_mod_glo_phy_anfc_merged-uv_PT1H-i', 'nrt',
+                                               username, password, parameters, sel_dict,
+                                               method_interp=method_interp, method_extrap=method_extrap)
+
+    df_currents = currents_trajectory.to_dataframe()
     
-    # If both components are present on the dataframe generated as output in df_weather
-    if 'u-component_of_wind_height_above_ground' and 'v-component_of_wind_height_above_ground' in df_weather.columns:
-        
-        # Calculate wind speed from u and v components and convert it from m/s to knots (*1.94384)
-        df_weather['tws_gfs_kts'] = np.sqrt(df_weather['u-component_of_wind_height_above_ground'] + df_weather['v-component_of_wind_height_above_ground'])*1.94384
-    
-        # Calculate wind direction from u and v components math (wind direction)
-        df_weather['twd_gfs_T'] = (270 - 
-                                   np.degrees(
-                                       np.arctan2(df_weather['v-component_of_wind_height_above_ground'], df_weather['u-component_of_wind_height_above_ground']))) % 360
-        
+    df_currents.to_csv(output_file)
+    return df_currents
 
-        # Select only intserest columns and convert to float64 type (needed for rounding values)
-        df_weather = df_weather[['tws_gfs_kts', 'twd_gfs_T']].astype(np.float64)
-        
-        # Round speed 
-        df_weather['tws_gfs_kts'] = np.round(df_weather['tws_gfs_kts'], 2)
-        
-        # Round angle 
-        df_weather['twd_gfs_T'] = np.round(df_weather['twd_gfs_T'], 2)
-         
-        # Concatenate input dataframe (ship data) with enriched data
-        df_result = pd.concat([df_positions, df_weather], axis=1)
-
-    return df_result
-
-
-def enrich_trajectory_with_physics_data_igor(csv_file, username, password, parameters=None,
+def enrich_trajectory_with_physics_data_igor(file, username, password, parameters=None,
                                         method_interp='nearest', method_extrap='linear'):
     """
     :return: pandas.Dataframe
@@ -373,12 +379,7 @@ def enrich_trajectory_with_physics_data_igor(csv_file, username, password, param
     if parameters is None:
         parameters = ['thetao', 'so', 'zos']
 
-    ################ Changed 
-    df_positions = pd.read_csv(csv_file)
-    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
-    df_positions['time'] = pd.to_datetime(df_positions['time'])
-    ###############
-    
+    df_positions = read_bto_extracted_data_positions(file)
     sel_dict = get_trajectory_dict(df_positions)
 
     physics_trajectory = get_cmems_trajectory('cmems_mod_glo_phy_anfc_0.083deg_PT1H-m', 'nrt',
@@ -389,42 +390,13 @@ def enrich_trajectory_with_physics_data_igor(csv_file, username, password, param
     return df_physics
 
 
-def enrich_trajectory_with_physics_data_igor(csv_file, username, password, parameters=None,
-                                        method_interp='nearest', method_extrap='linear'):
+def enrich_trajectory_with_bathymetric_data_igor(file, method_interp='nearest', method_extrap='linear', spatial_buffer=1):
     """
     :return: pandas.Dataframe
     """
-    if parameters is None:
-        parameters = ['thetao', 'so', 'zos']
 
-    ################ Changed 
-    df_positions = pd.read_csv(csv_file)
-    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
-    df_positions['time'] = pd.to_datetime(df_positions['time'])
-    ###############
-    
+    df_positions = read_bto_extracted_data_positions(file)
     sel_dict = get_trajectory_dict(df_positions)
-
-    physics_trajectory = get_cmems_trajectory('cmems_mod_glo_phy_anfc_0.083deg_PT1H-m', 'nrt',
-                                              username, password, parameters, sel_dict,
-                                              method_interp=method_interp, method_extrap=method_extrap)
-
-    df_physics = physics_trajectory.to_dataframe()
-    return df_physics
-
-
-def enrich_trajectory_with_bathymetric_data(csv_file, method_interp='nearest', method_extrap='linear', spatial_buffer=1):
-    """
-    :return: pandas.Dataframe
-    """
-    ################ Changed 
-    df_positions = pd.read_csv(csv_file)
-    df_positions.rename(columns={'timestampUtc' : 'time'}, inplace=True)
-    df_positions['time'] = pd.to_datetime(df_positions['time'])
-    ###############
-    
-    sel_dict = get_trajectory_dict(df_positions)
-
 
     data_url = "https://www.ngdc.noaa.gov/thredds/dodsC/global/ETOPO2022/30s/30s_geoid_netcdf/ETOPO_2022_v1_30s_N90W180_geoid.nc"
     bathymetric_data = xarray.open_dataset(data_url)
@@ -443,3 +415,5 @@ def enrich_trajectory_with_bathymetric_data(csv_file, method_interp='nearest', m
 
     df_depth = depth_trajectory.to_dataframe()
     return df_depth
+
+
