@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maridatadownloader"
+version = "0.1"
+authors = [
+  { name="52N Developers", email="info@52north.org" },
+]
+description = "Python package for downloading environmental data (atmosphere, ocean, ...)"
+readme = "README.md"
+#license = { file="LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "cdsapi",
+    "copernicusmarine",
+    "pydap",
+    "xarray",
+    "netCDF4",
+    "numpy",
+    "pandas",
+    "requests"
+]
+
+[tool.setuptools.packages.find]
+include = ["maridatadownloader*"]

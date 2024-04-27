@@ -18,7 +18,8 @@ class DownloaderFactory:
                 assert 'product_type' in kwargs, "kwargs['product_type'] is required for platform=cmems"
                 assert username, "username is required for platform=cmems"
                 assert password, "password is required for platform=cmems"
-                return DownloaderOpendapCMEMS(kwargs['product'], kwargs['product_type'], username, password, **kwargs)
+                return DownloaderOpendapCMEMS(kwargs.pop('product'), kwargs.pop('product_type'), username, password,
+                                              **kwargs)
             elif platform.lower() == 'etoponcei':
                 return DownloaderOpendapETOPONCEI(**kwargs)
             else:

@@ -34,7 +34,7 @@ class DownloaderCopernicusMarineToolboxApi(DownloaderBase):
     
     def __init__(self, username, password, **kwargs):
         super().__init__('cmtapi', username=username, password=password, **kwargs)
-        self.client = copernicusmarine.login(username=username, password=password)
+        self.client = copernicusmarine.login(username=username, password=password, overwrite_configuration_file=True)
         self.dataset = None
         self.product = kwargs.get('product')
         self.product_type = kwargs.get('product_type')
