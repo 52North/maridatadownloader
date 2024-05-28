@@ -119,7 +119,7 @@ def enrich_trajectory_with_weather_data(csv_file, parameters=None, height_above_
         sel_dict['height_above_ground'] = height_above_ground
         sel_dict['height_above_ground2'] = height_above_ground
 
-    gfs = DownloaderFactory.get_downloader('opendap', 'gfs')
+    gfs = DownloaderFactory.get_downloader('xarray', 'gfs')
     weather_trajectory = gfs.download(parameters=parameters, sel_dict=sel_dict, interpolate=True,
                                       method=method_interp)
     df_weather = weather_trajectory.to_dataframe()
@@ -182,7 +182,7 @@ def get_cmems_trajectory(product, product_type, username, password, parameters, 
     """
     :return: pandas.Dataframe
     """
-    cmems = DownloaderFactory.get_downloader('opendap', 'cmems', username, password,
+    cmems = DownloaderFactory.get_downloader('xarray', 'cmems', username, password,
                                              product=product, product_type=product_type)
 
     assert 'time' in sel_dict
