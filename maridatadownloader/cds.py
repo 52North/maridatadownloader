@@ -11,7 +11,7 @@ from maridatadownloader.base import DownloaderBase
 logger = logging.getLogger(__name__)
 
 
-class   DownloaderCdsApiERA5(DownloaderBase):
+class DownloaderCdsApiERA5(DownloaderBase):
     """
     ERA5 Reanalysis Downloader from cds copernicus based on xarray
 
@@ -33,12 +33,13 @@ class   DownloaderCdsApiERA5(DownloaderBase):
         """
         settings['product_type'] = 'reanalysis'
         settings['format'] = 'netcdf'
-        # Apply subsetting od data
         
-        dataset = self.dataset
-        
-        dataset_sub = self._apply_subsetting_example(dataset,  parameters, sel_dict, **kwargs)
-                                                    
+        # Apply subsetting on data
+        try:
+            settings = self._apply_subsetting(settings, parameters, sel_dict, **kwargs)      
+        except Exception:
+            'Make sure to pass filter parameters inside the sel_dict'
+                        
         request = self.client.retrieve(name='reanalysis-era5-single-levels', request=settings)
         r = requests.get(request.location)
         if r.status_code == 200:
@@ -48,7 +49,7 @@ class   DownloaderCdsApiERA5(DownloaderBase):
         logger.info('Data read successful')
         
         try:
-            dataset_sub = self.postprocessing(dataset_sub)
+            dataset_sub = self.postprocessing(self.dataset)
         except NotImplementedError:
             pass
 
@@ -68,32 +69,23 @@ class   DownloaderCdsApiERA5(DownloaderBase):
         """Apply operations on the xarray.Dataset before download, e.g. transform coordinates"""
         raise NotImplementedError(".preprocessing() can optionally be overridden.")
 
-    def _apply_subsetting_example(self, settings, parameters=None, sel_dict=None, **kwargs):
+    def _apply_subsetting(self, settings, parameters=None, sel_dict=None, **kwargs):
+        """
+        Apply subsetting on data considering other sel_dict already used on maridatadownloader tool
+        """
         
         # Define variables to be downloaded 
-        if parameters != None:
+        if parameters is not None:
             settings['variable'] = parameters
         else:
             settings['variable'] = ['10m_u_component_of_wind', '10m_v_component_of_wind']
         
-        # Define bbox to download the data
-        # Format: [North, West, South, East]
-        # lat_max, long_min, lat_min, long_max
-        # y_max, x_min, y_min, x_max
-        # area = [41, -75, 40, -73]
-        # settings['area'] = [sel_dict['latitude'][1], 
-        #                     sel_dict['longitude'][0],
-        #                     sel_dict['latitude'][0],
-        #                     sel_dict['longitude'][1]]
-        
-        # Subset timestamps
-        # datetime list
         start_datetime_str = sel_dict['time'].start #start date
-        end_datetime_str = sel_dict['time'].end # end date
+        end_datetime_str = sel_dict['time'].stop # end date
         
         # Parse the datetime strings to datetime objects
-        start_datetime = datetime.strptime(start_datetime_str, "%Y-%m-%dT%H:%M:%S")
-        end_datetime = datetime.strptime(end_datetime_str, "%Y-%m-%dT%H:%M:%S")
+        start_datetime = datetime.strptime(start_datetime_str, "%Y-%m-%d %H:%M:%S")
+        end_datetime = datetime.strptime(end_datetime_str, "%Y-%m-%d %H:%M:%S")
         
         # Generate list of hourly timestamps
         timestamps = [start_datetime + timedelta(hours=i) for i in range(int((end_datetime - start_datetime).total_seconds() // 3600) + 1)]
@@ -104,64 +96,4 @@ class   DownloaderCdsApiERA5(DownloaderBase):
         # Subset based on time (00:00)
         settings['time'] = sorted(list(set([dt.strftime("%H:00") for dt in timestamps])))
         
-        
         return settings
-        
-        
-        
-    # def _apply_subsetting(self, dataset, sel_dict,  parameters=None, coord_dict=None, subsetting_method=None, **kwargs):
-        
-    #     settings = {
-    #         'product_type': 'reanalysis',    # Product type
-    #         'variable': [
-    #             '10m_u_component_of_wind',   # U-component of wind
-    #             '10m_v_component_of_wind'    # V-component of wind
-    #         ],
-    #         'year': '2020',                  # Year of interest
-    #         'month': '01',                   # Month of interest
-    #         'day': '01',                     # Day of interest
-    #         'time': '12:00',                 # Time of interest
-    #         'format': 'netcdf'                 # Desired output format
-    #         }
-        
-        
-        
-        # ToDo: support xarrray.Dataset.interp_like?
-        # Apply parameter subsetting
-        if parameters:
-            dataset_sub = dataset[parameters]
-        else:
-            dataset_sub = dataset
-
-        # Check if the selection keys are valid dimension names
-        if coord_dict:
-            for key in list(coord_dict.keys()):
-                if key not in dataset_sub.dims:
-                    del coord_dict[key]
-
-        # Apply coordinate subsetting
-        if subsetting_method == 'sel':
-            dataset_sub = dataset_sub.sel(**coord_dict, **kwargs)
-        elif subsetting_method == 'isel':
-            dataset_sub = dataset_sub.isel(**coord_dict, **kwargs)
-        elif subsetting_method == 'interp':
-            dataset_sub = dataset_sub.interp(**coord_dict, **kwargs)
-
-        return dataset_sub
-
-    def _prepare_download(self, sel_dict=None, isel_dict=None, interpolate=False):
-        # Make a copy of the sel/isel dict because key-value pairs might be deleted from it
-        coord_dict = {}
-        subsetting_method = None
-        if sel_dict:
-            assert not isel_dict, "sel_dict and isel_dict are mutually exclusive"
-            coord_dict = deepcopy(sel_dict)
-            subsetting_method = 'sel'
-        if isel_dict:
-            assert not sel_dict, "sel_dict and isel_dict are mutually exclusive"
-            coord_dict = deepcopy(isel_dict)
-            subsetting_method = 'isel'
-        if interpolate:
-            assert not isel_dict, "interpolation cannot be applied with index subsetting"
-            subsetting_method = 'interp'
-        return coord_dict, subsetting_method
