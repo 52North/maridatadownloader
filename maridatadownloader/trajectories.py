@@ -416,106 +416,6 @@ def enrich_trajectory_with_bathymetric_data_igor(file, method_interp='nearest', 
     df_depth = depth_trajectory.to_dataframe()
     return df_depth
 
-
-# def enrich_trajectory_with_era5_data_igor(file, output_file, username, password, parameters=None, 
-#                                           method_interp='nearest', method_extrap='linear'):
-#     """
-#     :return: pandas.Dataframe
-#     """
-#     if parameters is None:
-#         parameters = ['10m_u_component_of_wind', '10m_v_component_of_wind']
-        
-#     df_positions = read_bto_extracted_data_positions(file)
-#     #df_positions.dropna(subset=['longitude'], inplace=True)
-    
-    
-#     sel_dict = get_trajectory_dict(df_positions)
-    
-    
-#     #df_positions = df_positions[~(df_positions['longitude'].isna())]
-    
-    
-#     era5_trajectory = get_era5_trajectory(username, password, parameters, sel_dict,
-#                                           method_interp=method_interp, method_extrap=method_extrap)
-
-
-
-#     # #################
-#     # era5 = DownloaderFactory.get_downloader('cdsapi', 'era5', username=username, password=password)
-#     # era5_trajectory = era5.download(parameters=parameters, sel_dict=sel_dict, interpolate=True,
-#     #                                   method=method_interp)
-#     # ################
-    
-
-    
-#     df_era5 = era5_trajectory.to_dataframe()
-    
-#     df_era5.to_csv(output_file)
-#     return df_era5
-
-def get_era5_trajectory(username, password, parameters, sel_dict,
-                        spatial_buffer=1, method_interp='nearest', method_extrap='linear'):
-    """
-    :return: pandas.Dataframe
-    """
-    era5 = DownloaderFactory.get_downloader('cdsapi', 'era5', username=username, password=password)
-
-    assert 'time' in sel_dict
-    assert 'longitude' in sel_dict
-    assert 'latitude' in sel_dict
-
-    time_min = min(sel_dict['time'])
-    time_max = max(sel_dict['time'])
-    lon_min = min(sel_dict['longitude'])
-    lon_max = max(sel_dict['longitude'])
-    lat_min = min(sel_dict['latitude'])
-    lat_max = max(sel_dict['latitude'])
-
-    # CMEMS data has NaN values on land pixels, thus we need to extrapolate NaN values close to the coast to make
-    # sure that we have no NaN values in the interpolated data for the trajectory
-    sub_cube = get_era5_sub_cube(era5, parameters, time_min, time_max, lon_min, lon_max, lat_min, lat_max,
-                                  spatial_buffer)
-    if has_nan(sub_cube):
-        sub_cube = fill_nan(sub_cube, method=method_extrap)
-    dataset_trajectory = sub_cube.interp(**sel_dict, method=method_interp)
-    return dataset_trajectory
-
-
-def get_era5_sub_cube(downloader, parameters, time_min, time_max, lon_min, lon_max, lat_min, lat_max,
-                       spatial_buffer=1):
-    """
-    :param downloader:
-    :param parameters:
-    :param lat_max:
-    :param lat_min:
-    :param lon_max:
-    :param lon_min:
-    :param time_max:
-    :param time_min:
-    :param spatial_buffer: in degrees
-    :return:
-    """
-    time_next_lower = downloader.dataset.time.sel(time=time_min, method='ffill')
-    time_next_upper = downloader.dataset.time.sel(time=time_max, method='bfill')
-
-
-
-
-    sub_cube = downloader.download(parameters=parameters, sel_dict={'time': slice(time_next_lower, time_next_upper)})
-    sub_cube = sub_cube.sel(latitude=slice(lat_min - spatial_buffer, lat_max + spatial_buffer),
-                            longitude=slice(lon_min - spatial_buffer, lon_max + spatial_buffer))
-    return sub_cube
-
-
-
-# def get_cmems_trajectory(product, product_type, username, password, parameters, sel_dict,
-#                          spatial_buffer=1, method_interp='nearest', method_extrap='linear'):
-#     """
-#     :return: pandas.Dataframe
-#     """
-#     cmems = DownloaderFactory.get_downloader('opendap', 'cmems', username, password,
-#                                              product=product, product_type=product_type)
-
 def enrich_trajectory_with_era5_data_igor(file, output_file, username, password, parameters=None, 
                                           method_interp='nearest', method_extrap='linear'):
     """
@@ -527,7 +427,7 @@ def enrich_trajectory_with_era5_data_igor(file, output_file, username, password,
     df_positions = read_bto_extracted_data_positions(file)
     
     # Convert longitude from -180 to 180 interval to 0 to 360
-    df_positions['longitude'] = df_positions['longitude'].apply(lambda lon: lon + 360 if lon < 0 else lon)
+    #df_positions['longitude'] = df_positions['longitude'].apply(lambda lon: lon + 360 if lon < 0 else lon)
     
     sel_dict = get_trajectory_dict(df_positions)
     
