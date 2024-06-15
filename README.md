@@ -9,7 +9,7 @@ Currently supported platforms/provider:
  - ETOPO Global Relief Model (NOAA/NCEI)
 
 Currently supported access services/APIs:
- - OPeNDAP
+ - OPeNDAP (via xarray)
  - Copernicus CDS API
  - Copernicus Marine Toolbox API
 
@@ -101,7 +101,7 @@ They can be provided to the `DownloaderFactory.get_downloader` method and are in
 
 ```python
 chunks = {'latitude': 100, 'longitude': 100}
-gfs = DownloaderFactory.get_downloader('opendap', 'gfs', chunks=chunks)
+gfs = DownloaderFactory.get_downloader('xarray', 'gfs', chunks=chunks)
 ```
 
 Further reading:
@@ -110,20 +110,20 @@ Further reading:
 
 ### Available datasets/downloader
 
-| Platform/Provider | Downloader type  | Type of data         | Product                                  | Product type | References |
-|-------------------|------------------|----------------------|------------------------------------------|--------------|------------|
-| cmems¹            | opendap⁵, cmtapi | Ocean waves          | cmems_mod_glo_wav_anfc_0.083deg_PT3H-i²  | nrt³         | [1]        |
-| cmems¹            | opendap⁵, cmtapi | Ocean currents       | cmems_mod_glo_phy_anfc_merged-uv_PT1H-i² | nrt³         | [2]        |
-| cmems¹            | opendap⁵, cmtapi | Ocean physics        | cmems_mod_glo_phy_anfc_0.083deg_PT1H-m²  | nrt³         | [2]        |
-| gfs               | opendap          | Weather/Atmosphere   | -                                        | -            | [3]        |
-| etoponcei         | opendap          | Topology/Bathymetric | -                                        | -            | [4]        |
-| era5¹⁴            | cdsapi           | Atmosphere/Ocean     | -                                        | -            | [5]        |
+| Platform/Provider | Downloader type | Type of data         | Product                                  | Product type | References |
+|-------------------|-----------------|----------------------|------------------------------------------|--------------|------------|
+| cmems¹            | xarray⁵, cmtapi | Ocean waves          | cmems_mod_glo_wav_anfc_0.083deg_PT3H-i²  | nrt³         | [1]        |
+| cmems¹            | xarray⁵, cmtapi | Ocean currents       | cmems_mod_glo_phy_anfc_merged-uv_PT1H-i² | nrt³         | [2]        |
+| cmems¹            | xarray⁵, cmtapi | Ocean physics        | cmems_mod_glo_phy_anfc_0.083deg_PT1H-m²  | nrt³         | [2]        |
+| gfs               | xarray          | Weather/Atmosphere   | -                                        | -            | [3]        |
+| etoponcei         | xarray          | Topology/Bathymetric | -                                        | -            | [4]        |
+| era5¹⁴            | cdsapi          | Atmosphere/Ocean     | -                                        | -            | [5]        |
 
 
 ¹Registration needed  
 ²Check the CMEMS product catalog for additional products: https://data.marine.copernicus.eu/products  
 ³nrt = near real-time  
-⁴The download interface differs from the interface of the 'opendap' downloader type (ToDo: harmonize)  
+⁴The download interface differs from the interface of the 'xarray' downloader type (ToDo: harmonize)  
 ⁵Deprecated (see https://marine.copernicus.eu/news/introducing-new-copernicus-marine-data-store)  
 
 Dataset references:

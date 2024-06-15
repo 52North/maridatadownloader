@@ -15,25 +15,34 @@ from maridatadownloader.utils import get_sel_dict_orthogonal, get_start_and_end_
 logger = logging.getLogger(__name__)
 
 
-class DownloaderOpendap(DownloaderBase):
+class DownloaderXarray(DownloaderBase):
     """
-    OPeNDAP downloader class based on xarray
+    Xarray downloader class. The class is intended to be inherited by subclasses which have to define the specific
+    data source to be used by implementing the `get_filename_or_obj` method. This method should return a
+    `filename_or_obj` which is passed later to `xarray.open_dataset` as argument `filename_or_obj`. So it can be one
+    of the following: str, Path, file-like or DataStore.
 
-    The download method provides a convenient way to download data via an OPeNDAP connection including some checks
-    to add robustness and the possibility to apply preprocessing and postprocessing.
-    If it doesn't suit the requirements of the use case, it is also possible to directly work on the xarray.Dataset
-    (self.dataset) and use all the methods provided by xarray directly
-    (https://docs.xarray.dev/en/latest/generated/xarray.Dataset.html#xarray.Dataset).
+    It is also possible to use the `DownloaderXarray` class as base class for more complex cases by overriding
+    the `open_dataset` method as long as this method returns an `xarray.Dataset`.
+
+    The download method provides a convenient way to download data from the defined source including some checks to
+    add robustness and the possibility to apply preprocessing and postprocessing. It uses only the `self.dataset`
+    attribute thus it is agnostic of the actual data source as long as it can return an `xarray.Dataset`.
+    If the download method doesn't suit the requirements of the use case, it is also possible to directly work on
+    the xarray.Dataset (self.dataset) and use all the methods provided by xarray directly.
 
     Coordinate subsetting with xarray can be done in different ways, e.g.:
      - by value or by index
      - allowing only exact matches or inexact matches (including different methods for inexact matches)
      - allowing off-grid subsetting using interpolation (including different interpolation methods)
     The download method can be used in all the aforementioned ways. For details check the method documentation.
-    """
 
+    References:
+        - https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html#xarray-open-dataset
+        - https://docs.xarray.dev/en/latest/generated/xarray.Dataset.html#xarray.Dataset
+    """
     def __init__(self, platform, username=None, password=None, **kwargs):
-        super().__init__('opendap', username=username, password=password, **kwargs)
+        super().__init__('xarray', username=username, password=password, **kwargs)
         self.platform = platform
         self.dataset = None
         self.filename_or_obj = self.get_filename_or_obj(**kwargs)
@@ -176,9 +185,9 @@ class DownloaderOpendap(DownloaderBase):
         return coord_dict, subsetting_method
 
 
-class DownloaderOpendapGFS(DownloaderOpendap):
+class DownloaderXarrayGFS(DownloaderXarray):
     """
-    OPeNDAP downloader class for the Global Forecast System (GFS)
+    Xarray downloader class for the Global Forecast System (GFS)
 
     By default, this class provides access to the GFS weather forecast data (-2 days up to +16 days).
     If access to archived forecast data is desired, the user must provide a time window (e.g., {'time': (
@@ -187,7 +196,6 @@ class DownloaderOpendapGFS(DownloaderOpendap):
     References:
      - https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/gfs.php
     """
-
     def __init__(self, username=None, password=None, **kwargs):
         self.model_cycles = [time(0), time(6), time(12), time(18)]
         self.forecast_times = [time(0), time(3), time(6), time(9), time(12), time(15), time(18), time(21)]
@@ -343,14 +351,15 @@ class DownloaderOpendapGFS(DownloaderOpendap):
         return urls
 
 
-class DownloaderOpendapCMEMS(DownloaderOpendap):
+class DownloaderXarrayCMEMS(DownloaderXarray):
     """
-    OPeNDAP downloader class for CMEMS
+    OPeNDAP downloader class for CMEMS based on xarray
+
+    DEPREC
 
     References:
         -  https://help.marine.copernicus.eu/en/articles/5182598-how-to-consume-the-opendap-api-and-cas-sso-using-python
     """
-
     def __init__(self, product, product_type, username, password, **kwargs):
         """
         :param product: str
@@ -363,6 +372,11 @@ class DownloaderOpendapCMEMS(DownloaderOpendap):
         self.product = product
         self.product_type = product_type
         super().__init__('cmems', username=username, password=password, **kwargs)
+        # https://marine.copernicus.eu/user-corner/user-notification-service/transition-marine-data-store
+        msg = (f"The class 'DownloaderOpendapCMEMS' (renamed to 'DownloaderXarrayCMEMS') should not be used any more "
+               f"because CMEMS stopped to support OPeNDAP on March 31st 2024!")
+        logger.error(msg)
+        raise DeprecationWarning(msg)
 
     def get_filename_or_obj(self, **kwargs):
         assert self.product
@@ -385,15 +399,14 @@ class DownloaderOpendapCMEMS(DownloaderOpendap):
         self.open_dataset()
 
 
-class DownloaderOpendapETOPONCEI(DownloaderOpendap):
+class DownloaderXarrayETOPONCEI(DownloaderXarray):
     """
-    OPeNDAP downloader class for topology and bathymetric data from NCEI
+    Xarray downloader class for topology and bathymetric data from NCEI
 
     References:
         - https://www.ncei.noaa.gov/products/etopo-global-relief-model
         - https://www.ngdc.noaa.gov/thredds/catalog/global/ETOPO2022/30s/30s_bed_elev_netcdf/catalog.html?dataset=globalDatasetScan/ETOPO2022/30s/30s_bed_elev_netcdf/ETOPO_2022_v1_30s_N90W180_bed.nc  # noqa
     """
-
     def __init__(self, **kwargs):
         """
         :param kwargs:

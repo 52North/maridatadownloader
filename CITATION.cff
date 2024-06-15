@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: maridatadownloader
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: 52°North Spatial Information Research GmbH
+    address: Martin-Luther-King-Weg 24
+    city: Münster
+    post-code: '48155'
+    country: GE
+    website: 'https://52north.org/'
+    alias: 52°North
+    tel: +49 251 396371 0
+    fax: +49 251 396371 11
+    email: info@52north.org
+repository-code: 'https://github.com/52North/maridatadownloader'
+repository: 'https://github.com/52North/WeatherRoutingTool'
+abstract: >-
+  Python package for downloading
+  environmental/marine/weather data.
+keywords:
+  - MariData
+  - WeatherRoutingTool
+  - MariGeoRoute
