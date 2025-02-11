@@ -19,16 +19,27 @@ class DownloaderCopernicusMarineToolboxApi(DownloaderXarray):
         - https://help.marine.copernicus.eu/en/articles/7949409-copernicus-marine-toolbox-introduction
         - https://help.marine.copernicus.eu/en/articles/8612591-switching-from-current-to-new-services
     """
+    # ToDo: make DownloaderXarray or parts of it a Mixin?
     def __init__(self, username, password, **kwargs):
-        # FIXME: set downloader_type to cmtapi and platform to cmems?
-        super().__init__('cmtapi', username=username, password=password, **kwargs)
-        self.client = copernicusmarine.login(username=username, password=password, overwrite_configuration_file=True)
-        self.dataset = None
+        self.downloader_type = 'cmtapi'
+        self.platform = 'cmems'
+        self.username = username
+        self.password = password
         self.product = kwargs.get('product')
         self.product_type = kwargs.get('product_type')
+        self.dataset = None
+        if 'chunks' in kwargs:
+            self.chunks = kwargs['chunks']
+        else:
+            self.chunks = None
+        self.client = copernicusmarine.login(username=username, password=password, force_overwrite=True)
         if self.product:
             self.open_dataset()
-    
+
+    def get_filename_or_obj(self, **kwargs):
+        # FIXME: this is inconsistent with the parent class at the moment
+        return None
+
     def download(self, parameters=None, sel_dict=None, isel_dict=None, file_out=None, interpolate=False, **kwargs):
         """
         :param parameters: str or list

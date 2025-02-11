@@ -20,10 +20,13 @@ class DownloaderFactory:
                 assert password, "password is required for platform=cmems"
                 return DownloaderXarrayCMEMS(kwargs.pop('product'), kwargs.pop('product_type'), username, password,
                                              **kwargs)
-            elif platform.lower() == 'cmtapi':
-                return DownloaderCopernicusMarineToolboxApi(username=username, password=password, **kwargs)
             elif platform.lower() == 'etoponcei':
                 return DownloaderXarrayETOPONCEI(**kwargs)
+            else:
+                raise ValueError(platform)
+        elif downloader_type.lower() == 'cmtapi':
+            if platform.lower() == 'cmems':
+                return DownloaderCopernicusMarineToolboxApi(username=username, password=password, **kwargs)
             else:
                 raise ValueError(platform)
         elif downloader_type.lower() == 'cdsapi':
