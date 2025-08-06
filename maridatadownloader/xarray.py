@@ -329,7 +329,7 @@ class DownloaderXarrayGFS(DownloaderXarray):
             forecast_time = 'f003'
         else:
             raise Exception()
-        url = ('https://thredds.rda.ucar.edu/thredds/dodsC/files/g/ds084.1/' + year + '/' + year + month + day + '/' +
+        url = ('https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d084001/' + year + '/' + year + month + day + '/' +
                'gfs.0p25.' + year + month + day + hour + '.' + forecast_time + '.grib2')
         return url
 
