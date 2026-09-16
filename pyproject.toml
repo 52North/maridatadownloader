@@ -20,6 +20,7 @@ dependencies = [
     "cdsapi",
     "copernicusmarine",
     "pydap",
+    "pydap[cas]",
     "xarray",
     "netCDF4",
     "numpy",
