@@ -6,7 +6,7 @@ from math import ceil
 # import dask
 import xarray
 from pydap.client import open_url
-from pydap.cas.get_cookies import setup_session
+from pydap.net import create_session
 from xarray.backends import NetCDF4DataStore
 
 from maridatadownloader.base import DownloaderBase
@@ -382,7 +382,7 @@ class DownloaderXarrayCMEMS(DownloaderXarray):
         assert self.product
         assert self.product_type
         cas_url = 'https://cmems-cas.cls.fr/cas/login'
-        session = setup_session(cas_url, self.username, self.password)
+        session = create_session(cas_url, self.username, self.password)
         session.cookies.set("CASTGC", session.cookies.get_dict()['CASTGC'])
         url = f'https://{self.product_type}.cmems-du.eu/thredds/dodsC/{self.product}'
         try:
