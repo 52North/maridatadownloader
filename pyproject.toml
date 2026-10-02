@@ -42,3 +42,7 @@ include = ["maridatadownloader*"]
 testpaths = ["tests"]
 markers = ["network: tests which access remote data sources (run with '-m network')"]
 addopts = "-m 'not network'"
+
+[tool.ruff]
+line-length = 88
+extend-exclude = ["notebooks"]

@@ -7,16 +7,16 @@ from maridatadownloader.registry import available_downloaders, get_downloader, r
 from maridatadownloader.subsetting import BoxSubset, Subset, TrajectorySubset
 
 __all__ = [
-    'BoxSubset',
-    'Downloader',
-    'DownloaderCMEMS',
-    'DownloaderERA5',
-    'DownloaderETOPO',
-    'DownloaderGFS',
-    'Request',
-    'Subset',
-    'TrajectorySubset',
-    'available_downloaders',
-    'get_downloader',
-    'register',
+    "BoxSubset",
+    "Downloader",
+    "DownloaderCMEMS",
+    "DownloaderERA5",
+    "DownloaderETOPO",
+    "DownloaderGFS",
+    "Request",
+    "Subset",
+    "TrajectorySubset",
+    "available_downloaders",
+    "get_downloader",
+    "register",
 ]

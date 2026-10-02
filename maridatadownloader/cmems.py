@@ -6,7 +6,7 @@ from maridatadownloader.registry import register
 logger = logging.getLogger(__name__)
 
 
-@register('cmems')
+@register("cmems")
 class DownloaderCMEMS(Downloader):
     """
     Downloader for CMEMS data using the Copernicus Marine Toolbox API (lazy-loading via
@@ -20,6 +20,7 @@ class DownloaderCMEMS(Downloader):
         - https://help.marine.copernicus.eu/en/articles/7949409-copernicus-marine-toolbox-introduction
         - https://help.marine.copernicus.eu/en/articles/8612591-switching-from-current-to-new-services
     """
+
     def __init__(self, dataset_id, username=None, password=None, **open_kwargs):
         """
         :param dataset_id: CMEMS dataset id, e.g. 'cmems_mod_glo_wav_anfc_0.083deg_PT3H-i'
@@ -38,6 +39,11 @@ class DownloaderCMEMS(Downloader):
         if self._dataset is None:
             # Imported here because importing the toolbox is slow
             import copernicusmarine
-            self._dataset = copernicusmarine.open_dataset(dataset_id=self.dataset_id, username=self.username,
-                                                          password=self.password, **self.open_kwargs)
+
+            self._dataset = copernicusmarine.open_dataset(
+                dataset_id=self.dataset_id,
+                username=self.username,
+                password=self.password,
+                **self.open_kwargs,
+            )
         return self._dataset

@@ -49,19 +49,23 @@ Every downloader provides the same two methods:
 from maridatadownloader import BoxSubset, get_downloader
 
 # Create downloader object. Source specific settings (credentials, dataset id, ...) are passed as keyword arguments.
-downloader = get_downloader('cmems', dataset_id='cmems_mod_glo_wav_anfc_0.083deg_PT3H-i',
-                            username='<username>', password='<password>')
+downloader = get_downloader(
+    "cmems",
+    dataset_id="cmems_mod_glo_wav_anfc_0.083deg_PT3H-i",
+    username="<username>",
+    password="<password>",
+)
 
 # Define parameters and subset
-parameters = ['VHM0', 'VMDR']
+parameters = ["VHM0", "VMDR"]
 subset = BoxSubset(
-    time=slice('2023-11-24T10:30:00', '2023-11-25T10:30:00'),
+    time=slice("2023-11-24T10:30:00", "2023-11-25T10:30:00"),
     latitude=slice(51.5, 52.5),
-    longitude=slice(7, 8)
+    longitude=slice(7, 8),
 )
 
 xarray_dataset = downloader.get_xarray_dataset(parameters=parameters, subset=subset)
-downloader.save_to_file('waves.nc', parameters=parameters, subset=subset)
+downloader.save_to_file("waves.nc", parameters=parameters, subset=subset)
 ```
 
 Use `available_downloaders()` to list the names which can be passed to `get_downloader`.
@@ -85,15 +89,24 @@ The sub-setting logic is implemented using xarray. For a detailed documentation 
 from maridatadownloader import BoxSubset
 
 # By value (xarray.Dataset.sel)
-BoxSubset(time=slice('2023-11-24T10:30:00', '2023-11-25T10:30:00'), latitude=slice(51.5, 52.5), longitude=7.0)
+BoxSubset(
+    time=slice("2023-11-24T10:30:00", "2023-11-25T10:30:00"),
+    latitude=slice(51.5, 52.5),
+    longitude=7.0,
+)
 # By value with inexact matches
-BoxSubset(latitude=51.53, longitude=[7.02, 7.48], method='nearest')
+BoxSubset(latitude=51.53, longitude=[7.02, 7.48], method="nearest")
 # By value with interpolation to off-grid values (xarray.Dataset.interp), slices are applied with sel
-BoxSubset(time=slice('2023-11-24', '2023-11-25'), latitude=51.53, longitude=7.02, interpolate=True)
+BoxSubset(
+    time=slice("2023-11-24", "2023-11-25"),
+    latitude=51.53,
+    longitude=7.02,
+    interpolate=True,
+)
 # By index (xarray.Dataset.isel)
-BoxSubset(time=0, latitude=slice(0, 10), longitude=slice(0, 10), by='index')
+BoxSubset(time=0, latitude=slice(0, 10), longitude=slice(0, 10), by="index")
 # Additional coordinates
-BoxSubset(time='2023-11-24T12:00:00', extra={'height_above_ground': 10})
+BoxSubset(time="2023-11-24T12:00:00", extra={"height_above_ground": 10})
 ```
 
 **Trajectory** (vectorized indexing along the dimension 'trajectory') with `TrajectorySubset`:
@@ -103,15 +116,21 @@ from datetime import datetime
 from maridatadownloader import TrajectorySubset
 
 subset = TrajectorySubset(
-    time=[datetime(2023, 9, 20, 9), datetime(2023, 9, 20, 11), datetime(2023, 9, 20, 13)],
+    time=[
+        datetime(2023, 9, 20, 9),
+        datetime(2023, 9, 20, 11),
+        datetime(2023, 9, 20, 13),
+    ],
     latitude=[51.9, 53.0, 54.0],
     longitude=[2.81, 3.19, 4.56],
-    method='linear',                          # interpolation method ('linear' or 'nearest')
-    extra={'height_above_ground': 10},        # additional coordinates (exact matches)
-    fill_nan='linear',                        # optional: fill NaN values (e.g. on land pixels) before interpolating
+    method="linear",  # interpolation method ('linear' or 'nearest')
+    extra={"height_above_ground": 10},  # additional coordinates (exact matches)
+    fill_nan="linear",  # optional: fill NaN values (e.g. on land pixels) before interpolating
 )
 # or from a pandas.DataFrame with the columns 'time', 'latitude' and 'longitude'
-subset = TrajectorySubset.from_dataframe(df_positions, every_nth_row=10, method='linear')
+subset = TrajectorySubset.from_dataframe(
+    df_positions, every_nth_row=10, method="linear"
+)
 ```
 
 Before interpolating, the data is reduced to a sub cube covering the trajectory (plus the next grid points and a spatial buffer `buffer_deg`).
@@ -128,9 +147,15 @@ Parameters have to be given as CDS variable names (e.g. `'10m_u_component_of_win
 The API key is the personal access token of your CDS profile.
 
 ```python
-era5 = get_downloader('era5', api_key='<personal-access-token>')
-dataset = era5.get_xarray_dataset(['10m_u_component_of_wind'], BoxSubset(time=slice('2023-01-01', '2023-01-02'),
-                                                                          latitude=slice(50, 55), longitude=slice(2, 8)))
+era5 = get_downloader("era5", api_key="<personal-access-token>")
+dataset = era5.get_xarray_dataset(
+    ["10m_u_component_of_wind"],
+    BoxSubset(
+        time=slice("2023-01-01", "2023-01-02"),
+        latitude=slice(50, 55),
+        longitude=slice(2, 8),
+    ),
+)
 ```
 
 #### Chunking
@@ -138,8 +163,8 @@ dataset = era5.get_xarray_dataset(['10m_u_component_of_wind'], BoxSubset(time=sl
 The GFS and ETOPO downloaders can use chunking via dask. The chunk sizes are passed to `xarray.open_dataset`.
 
 ```python
-chunks = {'lat': 100, 'lon': 100}
-gfs = get_downloader('gfs', chunks=chunks)
+chunks = {"lat": 100, "lon": 100}
+gfs = get_downloader("gfs", chunks=chunks)
 ```
 
 Further reading:
@@ -156,16 +181,17 @@ from maridatadownloader import Downloader, register
 from maridatadownloader.utils import open_xarray_dataset, rename_if_present
 
 
-@register('my_source')
+@register("my_source")
 class DownloaderMySource(Downloader):
-
     def open_dataset(self, request):
         if self._dataset is None:
-            self._dataset = open_xarray_dataset('https://example.org/thredds/dodsC/my_dataset.nc')
+            self._dataset = open_xarray_dataset(
+                "https://example.org/thredds/dodsC/my_dataset.nc"
+            )
         return self._dataset
 
     def normalize(self, dataset, request):
-        return rename_if_present(dataset, {'lat': 'latitude', 'lon': 'longitude'})
+        return rename_if_present(dataset, {"lat": "latitude", "lon": "longitude"})
 ```
 
 The `request` holds the requested parameters and subset (`request.time_bounds()`, `request.bbox()`) and can be used to choose the data source, e.g. as the GFS downloader does for archived data.

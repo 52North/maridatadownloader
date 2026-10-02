@@ -2,6 +2,8 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from io import IOBase
+from os import PathLike
 from pathlib import Path
 from typing import ClassVar
 
@@ -15,12 +17,13 @@ logger = logging.getLogger(__name__)
 # References:
 #  - https://github.com/pydata/xarray/issues/2822
 #  - https://github.com/Unidata/netcdf4-python/issues/1020
-RESERVED_NETCDF_ATTRS = ('_NCProperties', '_IsNetcdf4', '_SuperblockVersion')
+RESERVED_NETCDF_ATTRS = ("_NCProperties", "_IsNetcdf4", "_SuperblockVersion")
 
 
 @dataclass(frozen=True)
 class Request:
     """What the user asked for. It is passed to all hooks so that a data source can react to it."""
+
     parameters: tuple[str, ...] = ()
     subset: Subset | None = None
 
@@ -54,7 +57,8 @@ class Downloader(ABC):
      - latitude is ascending and defined from -90° to 90°
      - longitude is ascending and defined from -180° to 180°
     """
-    name: ClassVar[str] = ''
+
+    name: ClassVar[str] = ""
 
     _dataset: xarray.Dataset | None = None
 
@@ -62,7 +66,9 @@ class Downloader(ABC):
     def open_dataset(self, request: Request) -> xarray.Dataset:
         """Return the (lazy) source dataset. The request can be used to choose the source, e.g. URLs."""
 
-    def select_parameters(self, dataset: xarray.Dataset, request: Request) -> xarray.Dataset:
+    def select_parameters(
+        self, dataset: xarray.Dataset, request: Request
+    ) -> xarray.Dataset:
         """Select the requested parameters (data variables)"""
         if request.parameters:
             return dataset[list(request.parameters)]
@@ -76,7 +82,9 @@ class Downloader(ABC):
         """Apply operations on the subset, e.g. unit conversions"""
         return dataset
 
-    def get_xarray_dataset(self, parameters=None, subset: Subset | None = None) -> xarray.Dataset:
+    def get_xarray_dataset(
+        self, parameters=None, subset: Subset | None = None
+    ) -> xarray.Dataset:
         """
         :param parameters: str or list of str. All parameters are returned if None.
         :param subset: Subset, e.g. BoxSubset or TrajectorySubset. The whole dataset is returned if None.
@@ -90,14 +98,22 @@ class Downloader(ABC):
             dataset = subset.apply(dataset)
         return self.postprocess(dataset, request)
 
-    def save_to_file(self, path, parameters=None, subset: Subset | None = None, **to_netcdf_kwargs) -> Path:
+    def save_to_file(
+        self,
+        path: str | PathLike | IOBase | None,
+        parameters: tuple | list | None = None,
+        subset: Subset | None = None,
+        **to_netcdf_kwargs,
+    ) -> Path:
         """
         Save the dataset returned by `get_xarray_dataset` as NetCDF file.
 
         :param to_netcdf_kwargs: passed to xarray.Dataset.to_netcdf
         :return: pathlib.Path of the file
         """
-        dataset = _drop_reserved_netcdf_attrs(self.get_xarray_dataset(parameters, subset))
+        dataset = _drop_reserved_netcdf_attrs(
+            self.get_xarray_dataset(parameters, subset)
+        )
         logger.info(f"Save dataset to '{path}'")
         dataset.to_netcdf(path, **to_netcdf_kwargs)
         return Path(path)
@@ -119,5 +135,9 @@ def _drop_reserved_netcdf_attrs(dataset):
     if not any(attr in dataset.attrs for attr in RESERVED_NETCDF_ATTRS):
         return dataset
     dataset = dataset.copy(deep=False)
-    dataset.attrs = {key: value for key, value in dataset.attrs.items() if key not in RESERVED_NETCDF_ATTRS}
+    dataset.attrs = {
+        key: value
+        for key, value in dataset.attrs.items()
+        if key not in RESERVED_NETCDF_ATTRS
+    }
     return dataset
