@@ -1,6 +1,8 @@
 import logging
 
-from maridatadownloader.base import Downloader
+import xarray
+
+from maridatadownloader.base import Downloader, Request
 from maridatadownloader.registry import register
 from maridatadownloader.utils import open_xarray_dataset, rename_if_present
 
@@ -22,16 +24,16 @@ class DownloaderETOPO(Downloader):
         "/ETOPO_2022_v1_30s_N90W180_bed.nc"
     )
 
-    def __init__(self, chunks=None):
+    def __init__(self, chunks: int | str | dict | None = None) -> None:
         """
         :param chunks: chunk sizes passed to xarray.open_dataset (requires dask)
         """
         self.chunks = chunks
 
-    def open_dataset(self, request):
+    def open_dataset(self, request: Request) -> xarray.Dataset:
         if self._dataset is None:
             self._dataset = open_xarray_dataset(self.url, self.chunks)
         return self._dataset
 
-    def normalize(self, dataset, request):
+    def normalize(self, dataset: xarray.Dataset, request: Request) -> xarray.Dataset:
         return rename_if_present(dataset, {"lat": "latitude", "lon": "longitude"})

@@ -1,6 +1,9 @@
 import logging
+from typing import Any
 
-from maridatadownloader.base import Downloader
+import xarray
+
+from maridatadownloader.base import Downloader, Request
 from maridatadownloader.registry import register
 
 logger = logging.getLogger(__name__)
@@ -21,7 +24,13 @@ class DownloaderCMEMS(Downloader):
         - https://help.marine.copernicus.eu/en/articles/8612591-switching-from-current-to-new-services
     """
 
-    def __init__(self, dataset_id, username=None, password=None, **open_kwargs):
+    def __init__(
+        self,
+        dataset_id: str,
+        username: str | None = None,
+        password: str | None = None,
+        **open_kwargs: Any,
+    ) -> None:
         """
         :param dataset_id: CMEMS dataset id, e.g. 'cmems_mod_glo_wav_anfc_0.083deg_PT3H-i'
         :param username: Copernicus Marine username. If None, the toolbox looks for stored credentials or
@@ -35,7 +44,7 @@ class DownloaderCMEMS(Downloader):
         self.password = password
         self.open_kwargs = open_kwargs
 
-    def open_dataset(self, request):
+    def open_dataset(self, request: Request) -> xarray.Dataset:
         if self._dataset is None:
             # Imported here because importing the toolbox is slow
             import copernicusmarine

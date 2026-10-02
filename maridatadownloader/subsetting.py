@@ -12,9 +12,10 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
+import pandas as pd
 import xarray
 
 from maridatadownloader.utils import time_range, to_naive_utc, to_utc_index
@@ -58,20 +59,20 @@ class BoxSubset(Subset):
     time: Any = None
     latitude: Any = None
     longitude: Any = None
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
     by: str = "value"
     method: str | None = None
     interpolate: bool = False
-    options: dict = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.by not in ("value", "index"):
             raise ValueError(f"'by' must be 'value' or 'index', got '{self.by}'")
         if self.interpolate and self.by == "index":
             raise ValueError("Interpolation cannot be applied with index subsetting")
 
     @property
-    def indexers(self) -> dict:
+    def indexers(self) -> dict[str, Any]:
         indexers = {
             "time": self.time,
             "latitude": self.latitude,
@@ -80,7 +81,7 @@ class BoxSubset(Subset):
         }
         return {name: value for name, value in indexers.items() if value is not None}
 
-    def apply(self, dataset):
+    def apply(self, dataset: xarray.Dataset) -> xarray.Dataset:
         indexers = _dimension_indexers(dataset, self.indexers)
         if self.by == "index":
             return dataset.isel(indexers, **self.options)
@@ -107,12 +108,12 @@ class BoxSubset(Subset):
                 dataset = dataset.sel(points, method=self.method, **self.options)
         return dataset
 
-    def time_bounds(self):
+    def time_bounds(self) -> tuple[datetime, datetime] | None:
         if self.time is None or self.by == "index":
             return None
         return time_range(self.time)
 
-    def bbox(self):
+    def bbox(self) -> tuple[float, float, float, float] | None:
         if self.by == "index":
             return None
         lon_range = _value_range(self.longitude)
@@ -155,11 +156,11 @@ class TrajectorySubset(Subset):
     interpolate: bool = True
     buffer_deg: float = 1.0
     fill_nan: str | None = None
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
     dim: str = "trajectory"
-    options: dict = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.time = to_utc_index(self.time)
         self.latitude = np.atleast_1d(np.asarray(self.latitude, dtype=float))
         self.longitude = np.atleast_1d(np.asarray(self.longitude, dtype=float))
@@ -167,7 +168,9 @@ class TrajectorySubset(Subset):
             raise ValueError("time, latitude and longitude must have the same length")
 
     @classmethod
-    def from_dataframe(cls, dataframe, every_nth_row=1, **kwargs):
+    def from_dataframe(
+        cls, dataframe: pd.DataFrame, every_nth_row: int = 1, **kwargs: Any
+    ) -> Self:
         """Create a TrajectorySubset from a pandas.DataFrame with the columns 'time', 'latitude' and 'longitude'"""
         rows = dataframe.iloc[::every_nth_row]
         return cls(
@@ -177,7 +180,7 @@ class TrajectorySubset(Subset):
             **kwargs,
         )
 
-    def apply(self, dataset):
+    def apply(self, dataset: xarray.Dataset) -> xarray.Dataset:
         times = self.time.tz_convert(None).values
         lon_min, lat_min, lon_max, lat_max = self.bbox()
         sub_cube_ranges = {
@@ -212,10 +215,10 @@ class TrajectorySubset(Subset):
             return dataset.interp(points, method=self.method, **self.options)
         return dataset.sel(points, method=self.method, **self.options)
 
-    def time_bounds(self):
+    def time_bounds(self) -> tuple[datetime, datetime]:
         return self.time.min().to_pydatetime(), self.time.max().to_pydatetime()
 
-    def bbox(self):
+    def bbox(self) -> tuple[float, float, float, float]:
         return (
             self.longitude.min() - self.buffer_deg,
             self.latitude.min() - self.buffer_deg,
@@ -224,7 +227,9 @@ class TrajectorySubset(Subset):
         )
 
 
-def fill_nan(dataset, **kwargs):
+def fill_nan(
+    dataset: xarray.Dataset | xarray.DataArray, **kwargs: Any
+) -> xarray.Dataset | xarray.DataArray:
     """
     Fill NaN values using extrapolation along longitude and latitude (in this order; changing the order changes the
     result).
@@ -245,7 +250,7 @@ def fill_nan(dataset, **kwargs):
     return dataset
 
 
-def has_nan(dataarray_or_dataset):
+def has_nan(dataarray_or_dataset: xarray.DataArray | xarray.Dataset) -> bool:
     """Return True if the xarray.DataArray or any data variable of the xarray.Dataset contains NaN values"""
     if isinstance(dataarray_or_dataset, xarray.Dataset):
         return any(
@@ -254,7 +259,7 @@ def has_nan(dataarray_or_dataset):
     return bool(dataarray_or_dataset.isnull().any())
 
 
-def _bracketing_slice(coord, value_min, value_max):
+def _bracketing_slice(coord: xarray.DataArray, value_min: Any, value_max: Any) -> slice:
     """
     Return an index slice of the 1D coordinate which covers [value_min, value_max] including the next coordinate
     values beyond the bounds (if available). Works with ascending and descending coordinates.
@@ -271,7 +276,9 @@ def _bracketing_slice(coord, value_min, value_max):
     return slice(lower, upper + 1)
 
 
-def _dimension_indexers(dataset, indexers):
+def _dimension_indexers(
+    dataset: xarray.Dataset, indexers: dict[str, Any]
+) -> dict[str, Any]:
     """Drop indexers which are not dimensions of the dataset"""
     ignored = [name for name in indexers if name not in dataset.dims]
     if ignored:
@@ -281,7 +288,7 @@ def _dimension_indexers(dataset, indexers):
     return {name: value for name, value in indexers.items() if name in dataset.dims}
 
 
-def _value_range(value):
+def _value_range(value: Any) -> tuple[float, float] | None:
     """Return (min, max) of a scalar, sequence or slice indexer, independent of its order"""
     if value is None:
         return None

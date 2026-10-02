@@ -1,11 +1,12 @@
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from io import IOBase
 from os import PathLike
 from pathlib import Path
-from typing import ClassVar
+from types import TracebackType
+from typing import Any, ClassVar, Self
 
 import xarray
 
@@ -28,7 +29,11 @@ class Request:
     subset: Subset | None = None
 
     @classmethod
-    def create(cls, parameters=None, subset=None):
+    def create(
+        cls,
+        parameters: str | Iterable[str] | None = None,
+        subset: Subset | None = None,
+    ) -> Self:
         if isinstance(parameters, str):
             parameters = (parameters,)
         return cls(tuple(parameters or ()), subset)
@@ -83,7 +88,9 @@ class Downloader(ABC):
         return dataset
 
     def get_xarray_dataset(
-        self, parameters=None, subset: Subset | None = None
+        self,
+        parameters: str | Iterable[str] | None = None,
+        subset: Subset | None = None,
     ) -> xarray.Dataset:
         """
         :param parameters: str or list of str. All parameters are returned if None.
@@ -100,10 +107,10 @@ class Downloader(ABC):
 
     def save_to_file(
         self,
-        path: str | PathLike | IOBase | None,
-        parameters: tuple | list | None = None,
+        path: str | PathLike,
+        parameters: str | Iterable[str] | None = None,
         subset: Subset | None = None,
-        **to_netcdf_kwargs,
+        **to_netcdf_kwargs: Any,
     ) -> Path:
         """
         Save the dataset returned by `get_xarray_dataset` as NetCDF file.
@@ -118,20 +125,25 @@ class Downloader(ABC):
         dataset.to_netcdf(path, **to_netcdf_kwargs)
         return Path(path)
 
-    def close(self):
+    def close(self) -> None:
         """Release resources of the source dataset"""
         if self._dataset is not None:
             self._dataset.close()
             self._dataset = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.close()
 
 
-def _drop_reserved_netcdf_attrs(dataset):
+def _drop_reserved_netcdf_attrs(dataset: xarray.Dataset) -> xarray.Dataset:
     if not any(attr in dataset.attrs for attr in RESERVED_NETCDF_ATTRS):
         return dataset
     dataset = dataset.copy(deep=False)

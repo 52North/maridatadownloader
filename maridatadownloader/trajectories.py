@@ -1,6 +1,7 @@
 """Helpers for enriching trajectories (e.g. ship positions) with environmental data"""
 
 from datetime import UTC, datetime
+from os import PathLike
 
 import pandas as pd
 
@@ -9,13 +10,13 @@ from maridatadownloader.subsetting import TrajectorySubset
 
 
 def enrich_trajectory_with_env_data(
-    csv_file,
-    username,
-    password,
-    method_interp="nearest",
-    method_extrap="linear",
-    columns=None,
-):
+    csv_file: str | PathLike,
+    username: str,
+    password: str,
+    method_interp: str = "nearest",
+    method_extrap: str = "linear",
+    columns: list[str] | None = None,
+) -> pd.DataFrame:
     """
     Enrich the trajectory with weather (GFS), wave, physics and currents (CMEMS) data
 
@@ -68,13 +69,13 @@ def enrich_trajectory_with_env_data(
 
 
 def enrich_trajectory_with_currents_data(
-    csv_file,
-    username,
-    password,
-    parameters=None,
-    method_interp="nearest",
-    method_extrap="linear",
-):
+    csv_file: str | PathLike,
+    username: str,
+    password: str,
+    parameters: list[str] | None = None,
+    method_interp: str = "nearest",
+    method_extrap: str = "linear",
+) -> pd.DataFrame:
     """
     :return: pandas.DataFrame
     """
@@ -92,13 +93,13 @@ def enrich_trajectory_with_currents_data(
 
 
 def enrich_trajectory_with_physics_data(
-    csv_file,
-    username,
-    password,
-    parameters=None,
-    method_interp="nearest",
-    method_extrap="linear",
-):
+    csv_file: str | PathLike,
+    username: str,
+    password: str,
+    parameters: list[str] | None = None,
+    method_interp: str = "nearest",
+    method_extrap: str = "linear",
+) -> pd.DataFrame:
     """
     :return: pandas.DataFrame
     """
@@ -116,13 +117,13 @@ def enrich_trajectory_with_physics_data(
 
 
 def enrich_trajectory_with_wave_data(
-    csv_file,
-    username,
-    password,
-    parameters=None,
-    method_interp="nearest",
-    method_extrap="linear",
-):
+    csv_file: str | PathLike,
+    username: str,
+    password: str,
+    parameters: list[str] | None = None,
+    method_interp: str = "nearest",
+    method_extrap: str = "linear",
+) -> pd.DataFrame:
     """
     :return: pandas.DataFrame
     """
@@ -140,8 +141,11 @@ def enrich_trajectory_with_wave_data(
 
 
 def enrich_trajectory_with_weather_data(
-    csv_file, parameters=None, height_above_ground=10, method_interp="nearest"
-):
+    csv_file: str | PathLike,
+    parameters: list[str] | None = None,
+    height_above_ground: float | None = 10,
+    method_interp: str = "nearest",
+) -> pd.DataFrame:
     """
     :return: pandas.DataFrame
     """
@@ -162,7 +166,7 @@ def enrich_trajectory_with_weather_data(
     return gfs.get_xarray_dataset(parameters=parameters, subset=subset).to_dataframe()
 
 
-def read_hf_data_positions(csv_file):
+def read_hf_data_positions(csv_file: str | PathLike) -> pd.DataFrame:
     """
     :param csv_file:
     :return: pandas.DataFrame
@@ -192,8 +196,14 @@ def read_hf_data_positions(csv_file):
 
 
 def _enrich_trajectory_with_cmems_data(
-    csv_file, dataset_id, username, password, parameters, method_interp, method_extrap
-):
+    csv_file: str | PathLike,
+    dataset_id: str,
+    username: str,
+    password: str,
+    parameters: list[str],
+    method_interp: str,
+    method_extrap: str,
+) -> pd.DataFrame:
     # CMEMS data has NaN values on land pixels, thus we need to extrapolate NaN values close to the coast to make
     # sure that we have no NaN values in the interpolated data for the trajectory
     subset = TrajectorySubset.from_dataframe(

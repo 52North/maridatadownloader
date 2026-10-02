@@ -1,15 +1,29 @@
 import logging
 import re
+from collections.abc import Iterable
 from datetime import UTC, datetime
+from io import IOBase
+from os import PathLike
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import xarray
+from xarray.backends import AbstractDataStore
 
 logger = logging.getLogger(__name__)
 
 
-def open_xarray_dataset(filename_or_obj, chunks=None):
+def open_xarray_dataset(
+    filename_or_obj: str
+    | PathLike
+    | IOBase
+    | bytes
+    | memoryview
+    | AbstractDataStore
+    | list[str | PathLike | IOBase],
+    chunks: int | str | dict | None = None,
+) -> xarray.Dataset:
     """Open a single source with xarray.open_dataset or a list of sources with xarray.open_mfdataset"""
     if isinstance(filename_or_obj, list):
         return xarray.open_mfdataset(
@@ -18,7 +32,9 @@ def open_xarray_dataset(filename_or_obj, chunks=None):
     return xarray.open_dataset(filename_or_obj, decode_coords="all", chunks=chunks)
 
 
-def rename_if_present(dataset, name_dict):
+def rename_if_present(
+    dataset: xarray.Dataset, name_dict: dict[str, str]
+) -> xarray.Dataset:
     """Rename variables/coordinates/dimensions, ignoring names which are not part of the dataset"""
     name_dict = {
         old: new
@@ -28,7 +44,7 @@ def rename_if_present(dataset, name_dict):
     return dataset.rename(name_dict) if name_dict else dataset
 
 
-def standardize_lat_lon(dataset):
+def standardize_lat_lon(dataset: xarray.Dataset) -> xarray.Dataset:
     """Convert longitudes to the range (-180, 180) and sort latitude and longitude in ascending order"""
     with xarray.set_options(keep_attrs=True):
         dataset = dataset.assign_coords(
@@ -37,7 +53,9 @@ def standardize_lat_lon(dataset):
     return dataset.sortby(["latitude", "longitude"])
 
 
-def rename_numbered_variants(dataset, base_names):
+def rename_numbered_variants(
+    dataset: xarray.Dataset, base_names: Iterable[str]
+) -> xarray.Dataset:
     """
     Rename numbered variants of coordinates to their base name, e.g. 'time1' -> 'time', as long as the base name is
     not already in use. If several variants exist, the one with the lowest number is renamed.
@@ -64,7 +82,7 @@ def rename_numbered_variants(dataset, base_names):
     return dataset
 
 
-def to_naive_utc(value):
+def to_naive_utc(value: Any) -> Any:
     """
     Convert timezone-aware datetime objects (also inside slices, lists and tuples) to timezone-naive UTC datetime
     objects because xarray.Dataset.sel cannot compare them with timezone-naive datetime64 coordinates.
@@ -78,7 +96,7 @@ def to_naive_utc(value):
     return value
 
 
-def to_utc_index(values):
+def to_utc_index(values: Any) -> pd.DatetimeIndex:
     """
     Convert time values to a timezone-aware (UTC) pandas.DatetimeIndex. Supported are e.g. strings, datetime objects
     (timezone-naive values are interpreted as UTC), numpy.datetime64, sequences of those and xarray.DataArray.
@@ -91,7 +109,7 @@ def to_utc_index(values):
     return pd.DatetimeIndex(pd.to_datetime(values, utc=True))
 
 
-def time_range(value):
+def time_range(value: Any) -> tuple[datetime, datetime] | None:
     """
     Return the start and end time of a time indexer (scalar, sequence or slice) as timezone-aware datetime objects.
 

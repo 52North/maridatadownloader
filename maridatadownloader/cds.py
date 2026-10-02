@@ -1,11 +1,12 @@
 import logging
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import xarray
 
-from maridatadownloader.base import Downloader
+from maridatadownloader.base import Downloader, Request
 from maridatadownloader.registry import register
 from maridatadownloader.utils import rename_if_present, standardize_lat_lon
 
@@ -34,10 +35,10 @@ class DownloaderERA5(Downloader):
 
     def __init__(
         self,
-        api_key,
-        dataset_name="reanalysis-era5-single-levels",
-        product_type="reanalysis",
-    ):
+        api_key: str,
+        dataset_name: str = "reanalysis-era5-single-levels",
+        product_type: str = "reanalysis",
+    ) -> None:
         """
         :param api_key: CDS personal access token
         :param dataset_name: CDS dataset name
@@ -47,7 +48,7 @@ class DownloaderERA5(Downloader):
         self.dataset_name = dataset_name
         self.product_type = product_type
 
-    def open_dataset(self, request):
+    def open_dataset(self, request: Request) -> xarray.Dataset:
         # Imported here because the client is only needed for downloading
         import cdsapi
 
@@ -61,7 +62,7 @@ class DownloaderERA5(Downloader):
             with xarray.open_dataset(target) as dataset:
                 return dataset.load()
 
-    def build_cds_request(self, request):
+    def build_cds_request(self, request: Request) -> dict[str, Any]:
         """Build the CDS request from the parameters, time range and bounding box of the request"""
         if not request.parameters:
             raise ValueError(
@@ -93,11 +94,13 @@ class DownloaderERA5(Downloader):
             cds_request["area"] = [lat_max, lon_min, lat_min, lon_max]
         return cds_request
 
-    def select_parameters(self, dataset, request):
+    def select_parameters(
+        self, dataset: xarray.Dataset, request: Request
+    ) -> xarray.Dataset:
         """The parameters are already selected by the CDS request (and use different names in the dataset)"""
         return dataset
 
-    def normalize(self, dataset, request):
+    def normalize(self, dataset: xarray.Dataset, request: Request) -> xarray.Dataset:
         """
         ERA5 data come in ranges from 90 to -90 for latitude and, if no area is requested, from 0 to 360 for
         longitude. Convert them to ranges (-90, 90) for latitude and (-180, 180) for longitude.

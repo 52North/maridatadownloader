@@ -4,7 +4,7 @@ from math import ceil
 
 import xarray
 
-from maridatadownloader.base import Downloader
+from maridatadownloader.base import Downloader, Request
 from maridatadownloader.registry import register
 from maridatadownloader.utils import (
     open_xarray_dataset,
@@ -49,15 +49,15 @@ class DownloaderGFS(Downloader):
         time(21),
     )
 
-    def __init__(self, chunks=None):
+    def __init__(self, chunks: int | str | dict | None = None) -> None:
         """
         :param chunks: chunk sizes passed to xarray.open_dataset (requires dask). Archived data is always opened
             with dask chunks to be able to concatenate the files lazily.
         """
         self.chunks = chunks
-        self._archive_datasets = []
+        self._archive_datasets: list[xarray.Dataset] = []
 
-    def open_dataset(self, request):
+    def open_dataset(self, request: Request) -> xarray.Dataset:
         time_bounds = request.time_bounds()
         if time_bounds and time_bounds[1] < datetime.now(UTC) - self.archive_age:
             logger.info("Access archived GFS data")
@@ -66,7 +66,7 @@ class DownloaderGFS(Downloader):
             self._dataset = open_xarray_dataset(self.forecast_url, self.chunks)
         return self._dataset
 
-    def normalize(self, dataset, request):
+    def normalize(self, dataset: xarray.Dataset, request: Request) -> xarray.Dataset:
         """
         GFS data come in ranges from 90 to -90 for latitude and from 0 to 360 for longitude.
         Convert them to ranges (-90, 90) for latitude and (-180, 180) for longitude to make requests across the
@@ -76,13 +76,15 @@ class DownloaderGFS(Downloader):
         dataset = rename_numbered_variants(dataset, NUMBERED_COORDS)
         return standardize_lat_lon(dataset)
 
-    def close(self):
+    def close(self) -> None:
         super().close()
         for dataset in self._archive_datasets:
             dataset.close()
         self._archive_datasets = []
 
-    def _open_archive(self, time_start, time_end, parameters):
+    def _open_archive(
+        self, time_start: datetime, time_end: datetime, parameters: tuple[str, ...]
+    ) -> xarray.Dataset:
         urls = self._get_urls_time_window(time_start, time_end)
         if not urls:
             raise ValueError(
@@ -106,7 +108,7 @@ class DownloaderGFS(Downloader):
             compat="override",
         )
 
-    def _get_url(self, datetime_obj):
+    def _get_url(self, datetime_obj: datetime) -> str:
         """E.g. https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d084001/2023/20230501/gfs.0p25.2023050100
         .f000.grib2"""
         if datetime_obj.time() in self.model_cycles:
@@ -124,7 +126,9 @@ class DownloaderGFS(Downloader):
             f"gfs.0p25.{date}{hour}.{forecast_time}.grib2"
         )
 
-    def _get_urls_time_window(self, time_start, time_end):
+    def _get_urls_time_window(
+        self, time_start: datetime, time_end: datetime
+    ) -> list[str]:
         """
         Return a list of urls for the specified time interval. If time_start and time_end coincide exactly with the
         forecast times of GFS, they will be used as interval bounds. If time_start or time_end do not coincide with
