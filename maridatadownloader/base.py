@@ -109,7 +109,8 @@ class Downloader(ABC):
         dataset = self.normalize(dataset, request)
         if subset is not None:
             dataset = subset.apply(dataset)
-        return self.postprocess(dataset, request)
+        dataset = self.postprocess(dataset, request)
+        return _drop_reserved_netcdf_attrs(dataset)
 
     def save_to_file(
         self,
@@ -127,9 +128,7 @@ class Downloader(ABC):
         :param to_netcdf_kwargs: passed to xarray.Dataset.to_netcdf
         :return: pathlib.Path of the file
         """
-        dataset = _drop_reserved_netcdf_attrs(
-            self.get_xarray_dataset(parameters, subset)
-        )
+        dataset = self.get_xarray_dataset(parameters, subset)
         logger.info(f"Save dataset to '{path}'")
         dataset.to_netcdf(path, **to_netcdf_kwargs)
         return Path(path)
