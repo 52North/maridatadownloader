@@ -47,6 +47,9 @@ class BoxSubset(Subset):
     Each coordinate can be given as a scalar, a sequence or a slice. Coordinates which are not dimensions of the
     dataset are ignored (with a warning).
 
+    :param time: time indexer. Timezone-aware datetime objects are converted to UTC.
+    :param latitude: latitude indexer
+    :param longitude: longitude indexer
     :param by: 'value' uses xarray.Dataset.sel, 'index' uses xarray.Dataset.isel
     :param method: For by='value', the method for inexact matches (e.g. 'nearest'). If interpolate=True, the
         interpolation method (default: 'linear').
@@ -73,6 +76,7 @@ class BoxSubset(Subset):
 
     @property
     def indexers(self) -> dict[str, Any]:
+        """All indexers (including `extra`) by coordinate name, without the ones which are None"""
         indexers = {
             "time": self.time,
             "latitude": self.latitude,
@@ -171,7 +175,13 @@ class TrajectorySubset(Subset):
     def from_dataframe(
         cls, dataframe: pd.DataFrame, every_nth_row: int = 1, **kwargs: Any
     ) -> Self:
-        """Create a TrajectorySubset from a pandas.DataFrame with the columns 'time', 'latitude' and 'longitude'"""
+        """
+        Create a TrajectorySubset from a pandas.DataFrame with the columns 'time', 'latitude' and 'longitude'
+
+        :param dataframe: trajectory points
+        :param every_nth_row: use only every n-th row to thin out the trajectory
+        :param kwargs: passed to the TrajectorySubset constructor, e.g. method or fill_nan
+        """
         rows = dataframe.iloc[::every_nth_row]
         return cls(
             time=rows["time"],

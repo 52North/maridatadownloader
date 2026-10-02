@@ -77,7 +77,11 @@ def enrich_trajectory_with_currents_data(
     method_extrap: str = "linear",
 ) -> pd.DataFrame:
     """
-    :return: pandas.DataFrame
+    Enrich the trajectory with ocean currents from the CMEMS dataset 'cmems_mod_glo_phy_anfc_merged-uv_PT1H-i'
+    See `enrich_trajectory_with_env_data` for the other parameters.
+
+    :param parameters: CMEMS variable names (default: total eastward and northward sea water velocity)
+    :return: pandas.DataFrame with one row per trajectory point
     """
     if parameters is None:
         parameters = ["utotal", "vtotal"]
@@ -101,7 +105,11 @@ def enrich_trajectory_with_physics_data(
     method_extrap: str = "linear",
 ) -> pd.DataFrame:
     """
-    :return: pandas.DataFrame
+    Enrich the trajectory with ocean physics from the CMEMS dataset 'cmems_mod_glo_phy_anfc_0.083deg_PT1H-m'
+    See `enrich_trajectory_with_env_data` for the other parameters.
+
+    :param parameters: CMEMS variable names (default: potential temperature, salinity and sea surface height)
+    :return: pandas.DataFrame with one row per trajectory point
     """
     if parameters is None:
         parameters = ["thetao", "so", "zos"]
@@ -125,7 +133,12 @@ def enrich_trajectory_with_wave_data(
     method_extrap: str = "linear",
 ) -> pd.DataFrame:
     """
-    :return: pandas.DataFrame
+    Enrich the trajectory with wave data from the CMEMS dataset 'cmems_mod_glo_wav_anfc_0.083deg_PT3H-i'
+    See `enrich_trajectory_with_env_data` for the other parameters.
+
+    :param parameters: CMEMS variable names (default: significant wave height, mean wave direction and peak
+        wave period)
+    :return: pandas.DataFrame with one row per trajectory point
     """
     if parameters is None:
         parameters = ["VHM0", "VMDR", "VTPK"]
@@ -147,7 +160,15 @@ def enrich_trajectory_with_weather_data(
     method_interp: str = "nearest",
 ) -> pd.DataFrame:
     """
-    :return: pandas.DataFrame
+    Enrich the trajectory with weather data from GFS
+
+    :param csv_file: csv file with positions (see `read_hf_data_positions`)
+    :param parameters: GFS variable names (default: surface temperature, pressure reduced to MSL, wind gusts and
+        u/v wind components)
+    :param height_above_ground: height in meters used for parameters with a 'height_above_ground' coordinate
+        (e.g. wind components). Not applied if None.
+    :param method_interp: interpolation method along the trajectory
+    :return: pandas.DataFrame with one row per trajectory point
     """
     if parameters is None:
         parameters = [
@@ -168,8 +189,13 @@ def enrich_trajectory_with_weather_data(
 
 def read_hf_data_positions(csv_file: str | PathLike) -> pd.DataFrame:
     """
-    :param csv_file:
-    :return: pandas.DataFrame
+    Read ship positions from a csv file without header. Each line has the fields time, latitude, N/S, longitude
+    and E/W, separated by '|' or ',', e.g. '2023-05-01T12:00:00.000|5357.1234|N|00852.5678|E'.
+    Latitude is given as DDMM.mmm and longitude as DDDMM.mmm (degrees and decimal minutes), times are UTC.
+
+    :param csv_file: path of the csv file
+    :return: pandas.DataFrame with the columns 'time' (timezone-aware UTC), 'latitude' and 'longitude'
+        (decimal degrees, negative for S and W)
     """
     df_positions = pd.read_csv(
         csv_file,

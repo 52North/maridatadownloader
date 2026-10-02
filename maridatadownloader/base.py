@@ -23,7 +23,12 @@ RESERVED_NETCDF_ATTRS = ("_NCProperties", "_IsNetcdf4", "_SuperblockVersion")
 
 @dataclass(frozen=True)
 class Request:
-    """What the user asked for. It is passed to all hooks so that a data source can react to it."""
+    """
+    What the user asked for. It is passed to all hooks so that a data source can react to it.
+
+    :param parameters: names of the requested parameters (data variables). Empty means all parameters.
+    :param subset: requested subset or None for the whole dataset
+    """
 
     parameters: tuple[str, ...] = ()
     subset: Subset | None = None
@@ -34,6 +39,7 @@ class Request:
         parameters: str | Iterable[str] | None = None,
         subset: Subset | None = None,
     ) -> Self:
+        """Create a Request, accepting a single parameter name or any iterable of names"""
         if isinstance(parameters, str):
             parameters = (parameters,)
         return cls(tuple(parameters or ()), subset)
@@ -115,6 +121,9 @@ class Downloader(ABC):
         """
         Save the dataset returned by `get_xarray_dataset` as NetCDF file.
 
+        :param path: path of the NetCDF file
+        :param parameters: see `get_xarray_dataset`
+        :param subset: see `get_xarray_dataset`
         :param to_netcdf_kwargs: passed to xarray.Dataset.to_netcdf
         :return: pathlib.Path of the file
         """

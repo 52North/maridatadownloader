@@ -35,4 +35,5 @@ def get_downloader(name: str, **kwargs: Any) -> Downloader:
 
 
 def available_downloaders() -> list[str]:
+    """Return the sorted names of all registered downloaders"""
     return sorted(_REGISTRY)

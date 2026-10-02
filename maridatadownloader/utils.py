@@ -24,7 +24,12 @@ def open_xarray_dataset(
     | list[str | PathLike | IOBase],
     chunks: int | str | dict | None = None,
 ) -> xarray.Dataset:
-    """Open a single source with xarray.open_dataset or a list of sources with xarray.open_mfdataset"""
+    """
+    Open a single source with xarray.open_dataset or a list of sources with xarray.open_mfdataset
+
+    :param filename_or_obj: source (e.g. path or OPeNDAP URL) or list of sources
+    :param chunks: chunk sizes passed to xarray. Requires dask if not None. xarray.open_mfdataset always uses dask.
+    """
     if isinstance(filename_or_obj, list):
         return xarray.open_mfdataset(
             filename_or_obj, decode_coords="all", chunks=chunks
